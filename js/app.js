@@ -55,14 +55,16 @@ function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.ad
 let openGate; const piecesReady = new Promise((r) => { openGate = r; });
 function swapCanvas(id) { const old = document.getElementById(id), fresh = old.cloneNode(false); fresh.classList.remove('on'); old.replaceWith(fresh); return fresh; }
 function lifecycle(target, { near, far, make, kill, gate = Promise.resolve() }) {
-  let inst = null, busy = false, first = true, inFar = true;
+  // حالتان مستقلتان: داخل الهامش القريب (للبناء) وداخل الهامش البعيد (للإبقاء). لا نقتل ما بُني إلا إذا خرج من الاثنين،
+  // وهذا يمنع سباقاً بين مراقبَين يصل أحدهما قبل الآخر في الإطار نفسه فيُقتل العنصر الجديد فور بنائه.
+  let inst = null, busy = false, first = true, inNear = false, inFar = true;
   const ensure = async () => {
     if (inst || busy) return; busy = true;
-    try { await gate; const i = await make(first); first = false; if (!inFar) kill(i); else inst = i; } catch (e) { console.warn(e); } finally { busy = false; }
+    try { await gate; const i = await make(first); first = false; if (!inNear && !inFar) kill(i); else inst = i; } catch (e) { console.warn(e); } finally { busy = false; }
   };
   const release = () => { if (!inst) return; const i = inst; inst = null; try { kill(i); } catch (e) { console.warn(e); } };
-  new IntersectionObserver((es) => { if (es[0].isIntersecting) ensure(); }, { rootMargin: near }).observe(target);
-  new IntersectionObserver((es) => { inFar = es[0].isIntersecting; if (!inFar) release(); }, { rootMargin: far }).observe(target);
+  new IntersectionObserver((es) => { inNear = es[0].isIntersecting; if (inNear) ensure(); }, { rootMargin: near }).observe(target);
+  new IntersectionObserver((es) => { inFar = es[0].isIntersecting; if (!inFar && !inNear) release(); }, { rootMargin: far }).observe(target);
   return { get inst() { return inst; } };
 }
 const fadeIn = (el) => requestAnimationFrame(() => el.classList.add('on'));
