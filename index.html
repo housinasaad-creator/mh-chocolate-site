@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b0e0a">
+<title>MH Chocolate — Kalpten gelen çikolata</title>
+<meta name="description" content="Evde, elle ve sadece sipariş üzerine hazırlanan çikolata. Parçanı 3D tasarla, sepete ekle, siparişini WhatsApp’tan gönder.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="MH Chocolate — Kalpten gelen çikolata">
+<meta property="og:description" content="Parçanı 3D tasarla, siparişini tek dokunuşla WhatsApp’tan gönder.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231b0e0a'/%3E%3Ctext x='50' y='66' font-family='Georgia,serif' font-size='46' fill='%23d0548f' text-anchor='middle'%3EMH%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="is-loading">
+
+<div class="pre" id="pre" aria-hidden="true">
+  <div class="pre-in">
+    <svg class="pre-heart" viewBox="0 0 64 60"><path d="M32 56C10 40 4 28 4 18 4 10 10 4 18 4c6 0 11 3 14 9 3-6 8-9 14-9 8 0 14 6 14 14 0 10-6 22-28 38z" fill="none" stroke="currentColor" stroke-width="2"/><path class="pre-fill" d="M32 56C10 40 4 28 4 18 4 10 10 4 18 4c6 0 11 3 14 9 3-6 8-9 14-9 8 0 14 6 14 14 0 10-6 22-28 38z" fill="currentColor"/></svg>
+    <b>MH</b>
+  </div>
+</div>
+
+<header class="hdr" id="hdr">
+  <a class="logo" href="#top" aria-label="MH Chocolate">
+    <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22.5" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="24" y="30.5" text-anchor="middle" font-family="Cormorant Garamond, Georgia, serif" font-size="19" font-weight="600" fill="currentColor">MH</text></svg>
+    <span>CHOCOLATE</span>
+  </a>
+  <button class="bag" id="bag" type="button" aria-label="Sepetim">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2L5 8z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <b id="bagN">0</b>
+  </button>
+</header>
+
+<main id="top">
+  <!-- ======== الهيرو: شوكولا سائلة تُخلط + قطعة ثلاثية الأبعاد ======== -->
+  <section class="hero" id="hero">
+    <canvas class="liq" id="liq"></canvas>
+    <div class="hero-shade" aria-hidden="true"></div>
+    <canvas class="hero-piece" id="heroPiece" aria-label="Çikolata parçası"></canvas>
+    <div class="hero-copy">
+      <p class="kicker" id="hKicker"></p>
+      <h1 class="h1" id="hH1"></h1>
+      <p class="hero-sub" id="hSub"></p>
+      <div class="hero-btns">
+        <a class="btn" href="#atolye" id="hCta1"></a>
+        <a class="btn ghost" href="#" id="hCta2" target="_blank" rel="noopener"></a>
+      </div>
+    </div>
+    <p class="stir" id="hHint"><i></i><span></span></p>
+  </section>
+
+  <div class="marquee" aria-hidden="true"><div class="marquee-in" id="marq"></div></div>
+
+  <!-- ======== ورشة القطع ======== -->
+  <section class="studio" id="atolye">
+    <div class="wrap">
+      <header class="sec-head reveal">
+        <p class="kicker" id="sKicker"></p>
+        <h2 class="h2" id="sH2"></h2>
+        <p class="lead" id="sLead"></p>
+      </header>
+      <div class="studio-grid">
+        <div class="stage reveal">
+          <div class="stage-glow" aria-hidden="true"></div>
+          <canvas id="studioPiece" aria-label="3D çikolata"></canvas>
+          <button class="nav-btn prev" id="shPrev" type="button" aria-label="Önceki"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button class="nav-btn next" id="shNext" type="button" aria-label="Sonraki"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <p class="stage-cap"><b id="shName"></b><span id="shDesc"></span></p>
+          <p class="drag-hint" id="dragHint"></p>
+        </div>
+        <div class="opts reveal">
+          <div class="og"><h3 id="lShape"></h3><div class="chips" id="cShape"></div></div>
+          <div class="og"><h3 id="lType"></h3><div class="chips" id="cType"></div></div>
+          <div class="og"><h3 id="lTop"></h3><div class="chips" id="cTop"></div></div>
+          <div class="og"><h3 id="lFill"></h3><div class="chips" id="cFill"></div></div>
+          <div class="og row"><h3 id="lQty"></h3><div class="qty"><button type="button" id="qMinus" aria-label="-">−</button><b id="qVal">1</b><button type="button" id="qPlus" aria-label="+">+</button></div></div>
+          <textarea class="field" id="sNote" rows="2" maxlength="240"></textarea>
+          <button class="btn block" id="sAdd" type="button"></button>
+          <p class="price-note" id="sPrice"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======== طلب خاص ======== -->
+  <section class="custom" id="ozel">
+    <div class="wrap narrow">
+      <header class="sec-head reveal">
+        <p class="kicker" id="cKicker"></p>
+        <h2 class="h2" id="cH2"></h2>
+        <p class="lead" id="cLead"></p>
+      </header>
+      <div class="chips reveal" id="cuChips"></div>
+      <textarea class="field big reveal" id="cuText" rows="4" maxlength="600"></textarea>
+      <button class="btn reveal" id="cuAdd" type="button"></button>
+    </div>
+  </section>
+
+  <!-- ======== معرض صور حقيقية (يظهر فقط حين تُضاف الصور) ======== -->
+  <section class="gallery" id="galeri" hidden>
+    <div class="wrap">
+      <header class="sec-head reveal"><p class="kicker" id="gKicker"></p><h2 class="h2" id="gH2"></h2></header>
+      <div class="gal" id="gal"></div>
+      <a class="btn ghost" id="gMore" href="#" target="_blank" rel="noopener"></a>
+    </div>
+  </section>
+
+  <!-- ======== كيف تطلب ======== -->
+  <section class="how" id="nasil">
+    <div class="wrap">
+      <header class="sec-head reveal"><p class="kicker" id="wKicker"></p><h2 class="h2" id="wH2"></h2></header>
+      <ol class="steps" id="steps"></ol>
+      <p class="how-note reveal" id="wNote"></p>
+    </div>
+  </section>
+</main>
+
+<footer class="ftr">
+  <div class="wrap">
+    <div class="ftr-top">
+      <div class="ftr-logo"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22.5" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="24" y="30.5" text-anchor="middle" font-family="Cormorant Garamond, Georgia, serif" font-size="19" font-weight="600" fill="currentColor">MH</text></svg><p id="fLine"></p></div>
+      <nav class="ftr-links"><a id="fWa" href="#" target="_blank" rel="noopener"></a><a id="fIg" href="#" target="_blank" rel="noopener"></a></nav>
+    </div>
+    <div class="ftr-bot"><span id="fRights"></span><span id="fCredit"></span></div>
+  </div>
+</footer>
+
+<!-- شريط السلة السفلي -->
+<div class="bar" id="bar"><button type="button" id="barOpen"><span id="barTxt"></span></button><button class="btn" type="button" id="barSend"></button></div>
+
+<!-- ورقة السلة -->
+<div class="scrim" id="scrim"></div>
+<aside class="sheet" id="sheet" aria-hidden="true" role="dialog" aria-label="Sepetim">
+  <header class="sheet-h"><h3 id="shTitle"></h3><button class="x" id="shClose" type="button" aria-label="Kapat">×</button></header>
+  <div class="sheet-body" id="shBody"></div>
+  <footer class="sheet-f" id="shFoot"></footer>
+</aside>
+
+<div class="done" id="done" aria-hidden="true">
+  <div class="done-in"><div class="done-heart">♥</div><h3 id="dT"></h3><p id="dD"></p><button class="btn block" id="dOk" type="button"></button><button class="link" id="dAgain" type="button"></button></div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
