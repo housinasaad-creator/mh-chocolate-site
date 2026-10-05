@@ -139,8 +139,8 @@ export function createHero(canvas, host, opts = {}) {
   ];
   let dist0 = 8, px = 0;
   S.onResize = (w, h) => {
-    const t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)); dist0 = Math.max(1.55 / (t * camera.aspect), 1.95 / t);
-    if (camera.aspect < 1) camera.setViewOffset(w, h, 0, h * .21, w, h); else camera.setViewOffset(w, h, -w * .17, 0, w, h);
+    const t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)); dist0 = Math.max(1.55 / (t * camera.aspect), 1.95 / t) * (camera.aspect < 1 ? 1.07 : 1);
+    if (camera.aspect < 1) camera.setViewOffset(w, h, 0, h * .27, w, h); else camera.setViewOffset(w, h, -w * .17, 0, w, h);
   };
   S.onResize(canvas.clientWidth || 300, canvas.clientHeight || 300);
   function camAt(p) {

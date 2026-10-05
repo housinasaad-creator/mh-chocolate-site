@@ -2,6 +2,8 @@
    three.js ومشاهده تُحمَّل متأخرة وتُفكَّك بالكامل حين تبتعد عن الشاشة. */
 import { createLiquid } from './liquid.js';
 import { C, CONFIG } from './content.js';
+import { createSfx } from './sfx.js';
+const sfx = createSfx();
 
 document.documentElement.classList.add('js');
 const $ = (s, r) => (r || document).querySelector(s);
@@ -23,7 +25,7 @@ const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || '
 function copy() {
   document.title = C.title;
   const H = C.hero; $('#hHint span').textContent = H.hint;
-  $('#heroCopy').innerHTML = H.chapters.map((c, i) => `<div class="hc ${i === 0 ? 'on' : ''}" data-i="${i}"><p class="kicker">${esc(c.k)}</p><h2 class="h1 ${i ? 't1' : ''}">${c.t.map((w) => `<span class="line"><span>${esc(w)}</span></span>`).join(' ')}</h2><p class="hero-sub">${esc(c.s)}</p>${c.btns ? `<div class="hero-btns"><a class="btn" href="#atolye">${esc(H.cta1)}</a><a class="btn ghost" href="${waLink(C.wa.hello)}" target="_blank" rel="noopener">${esc(H.cta2)}</a></div>` : ''}</div>`).join('');
+  $('#heroCopy').innerHTML = H.chapters.map((c, i) => `<div class="hc ${i === 0 ? 'on' : ''}" data-i="${i}"><p class="kicker">${esc(c.k)}</p><h2 class="h1 ${i ? 't1' : ''}">${c.t.map((w) => `<span class="line"><span>${esc(w)}</span></span>`).join(' ')}</h2><p class="hero-sub">${esc(c.s)}</p>${c.q ? `<p class="hero-q">“${esc(c.q)}”</p>` : ''}${c.btns ? `<div class="hero-btns"><a class="btn" href="#atolye">${esc(H.cta1)}</a><a class="btn ghost" href="${waLink(C.wa.hello)}" target="_blank" rel="noopener">${esc(H.cta2)}</a></div>` : ''}</div>`).join('');
   $('#chDots').innerHTML = H.chapters.map((c, i) => `<li><button type="button" data-i="${i}" aria-label="${i + 1}"></button></li>`).join('');
   const S = C.studio; $('#sKicker').textContent = S.kicker; $('#sH2').textContent = S.h2; $('#sLead').textContent = S.lead; $('#labWhole').textContent = S.whole; $('#labCut').textContent = S.cut; $('#dragHint').textContent = S.drag; $('#replayT').textContent = S.replay;
   $('#layH').textContent = S.layersTitle; $('#metH').textContent = S.metersTitle; $('#metN').textContent = S.metersNote; $('#addons').textContent = S.addons;
@@ -35,10 +37,55 @@ function copy() {
   const W = C.how; $('#wKicker').textContent = W.kicker; $('#wH2').textContent = W.h2; $('#wNote').textContent = W.note;
   $('#steps').innerHTML = W.steps.map((s) => `<li class="reveal"><h4>${esc(s.t)}</h4><p>${esc(s.d)}</p></li>`).join('');
   const G = C.gallery; if (G.images.length) { $('#galeri').hidden = false; $('#gKicker').textContent = G.kicker; $('#gH2').textContent = G.h2; $('#gMore').textContent = G.more; $('#gMore').href = 'https://www.instagram.com/' + CONFIG.INSTAGRAM + '/'; $('#gal').innerHTML = G.images.map((src) => `<img src="${esc(src)}" alt="" loading="lazy" decoding="async">`).join(''); }
-  const F = C.footer; $('#fLine').textContent = F.line; $('#fRights').textContent = F.rights; $('#fCredit').textContent = F.credit; $('#fWa').textContent = F.wa; $('#fWa').href = waLink(C.wa.hello); $('#fIg').textContent = F.ig; $('#fIg').href = 'https://www.instagram.com/' + CONFIG.INSTAGRAM + '/';
+  const F = C.footer; $('#fLine').textContent = F.line; $('#fRights').textContent = F.rights; $('#fCredit').textContent = F.credit;
+  $('#fWa').href = waLink(C.wa.hello); $('#fWaT').textContent = 'WhatsApp'; $('#fIg').href = 'https://www.instagram.com/' + CONFIG.INSTAGRAM + '/'; $('#fIgT').textContent = '@' + CONFIG.INSTAGRAM;
+  $('#fTel').href = 'tel:+' + CONFIG.WA_NUMBER; $('#fTelT').textContent = CONFIG.PHONE_DISPLAY; $('#fAddr').textContent = CONFIG.ADDRESS; $('#qKicker').textContent = C.quotesTitle;
   $('#shTitle').textContent = C.cart.title; $('#dT').textContent = C.done.t; $('#dD').textContent = C.done.d; $('#dOk').textContent = C.done.ok; $('#dAgain').textContent = C.done.again; $('#barSend').textContent = C.cart.send;
 }
 copy();
+
+/* ---- أصوات الشوكولا: مطفأة افتراضياً + زر في الهيدر ---- */
+const sndBtn = $('#snd');
+const paintSnd = () => { const v = sfx.enabled; sndBtn.classList.toggle('on', v); sndBtn.setAttribute('aria-pressed', String(v)); sndBtn.setAttribute('aria-label', v ? C.sound.on : C.sound.off); };
+sfx.restore(load('mh-snd', 0) === 1); paintSnd();
+sndBtn.onclick = () => { sfx.setOn(!sfx.enabled); store('mh-snd', sfx.enabled ? 1 : 0); paintSnd(); };
+
+/* ---- جمل لعشّاق الشوكولا (تتبدّل وحدها) ---- */
+(function initQuotes() {
+  const st = $('#qStage'), dots = $('#qDots'), n = C.quotes.length; let qi = 0, timer = 0;
+  st.innerHTML = C.quotes.map((q, i) => `<blockquote class="${i ? '' : 'on'}"><q>${esc(q)}</q></blockquote>`).join('');
+  dots.innerHTML = C.quotes.map((q, i) => `<button type="button" class="${i ? '' : 'on'}" aria-label="${i + 1}"></button>`).join('');
+  const show = (i) => { qi = (i + n) % n; $$('blockquote', st).forEach((b, k) => b.classList.toggle('on', k === qi)); $$('button', dots).forEach((b, k) => b.classList.toggle('on', k === qi)); };
+  dots.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { show($$('button', dots).indexOf(b)); sfx.tick(); } });
+  new IntersectionObserver((es) => { clearInterval(timer); if (es[0].isIntersecting) timer = setInterval(() => show(qi + 1), 5200); }).observe($('#sozler'));
+})();
+
+/* ---- مؤشر ماوس بالشوكولا: حبة لامعة بذيل، تتحول لقلب وردي على الأزرار وتتناثر منها فتات عند النقر ---- */
+function burst(x, y) {
+  for (let i = 0; i < 8; i++) {
+    const c = document.createElement('i'); c.className = 'crumb'; c.style.left = x + 'px'; c.style.top = y + 'px'; document.body.appendChild(c);
+    const a = Math.random() * 6.283, d = 22 + Math.random() * 30;
+    c.animate([{ transform: 'translate(-50%,-50%) scale(1)', opacity: 1 }, { transform: `translate(${Math.cos(a) * d}px,${Math.sin(a) * d + 12}px) rotate(${Math.random() * 220}deg) scale(.35)`, opacity: 0 }], { duration: 520 + Math.random() * 240, easing: 'cubic-bezier(.2,.7,.2,1)' }).onfinish = () => c.remove();
+  }
+}
+(function initCursor() {
+  if (!matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  const cur = $('#cur'), t1 = $('#curT1'), t2 = $('#curT2'), root = document.documentElement; root.classList.add('has-cur');
+  let x = -100, y = -100, cx = x, cy = y, x1 = x, y1 = y, x2 = x, y2 = y, raf = 0;
+  const loop = () => {
+    raf = 0; cx += (x - cx) * .4; cy += (y - cy) * .4; x1 += (cx - x1) * .26; y1 += (cy - y1) * .26; x2 += (x1 - x2) * .26; y2 += (y1 - y2) * .26;
+    cur.style.transform = `translate3d(${cx}px,${cy}px,0)`; t1.style.transform = `translate3d(${x1}px,${y1}px,0)`; t2.style.transform = `translate3d(${x2}px,${y2}px,0)`;
+    if (Math.abs(x - cx) + Math.abs(y - cy) + Math.abs(cx - x2) + Math.abs(cy - y2) > .5) raf = requestAnimationFrame(loop);
+  };
+  addEventListener('mousemove', (e) => {
+    x = e.clientX; y = e.clientY; if (!root.classList.contains('cur-on')) { root.classList.add('cur-on'); cx = x1 = x2 = x; cy = y1 = y2 = y; }
+    const tg = e.target.closest ? e.target : document.body, drag = tg.closest('#studioPiece'), el = tg.closest('a,button,.chip,.ly,.co-pill,input,textarea,label,summary');
+    root.classList.toggle('cur-drag', !!drag); root.classList.toggle('cur-hot', !!el && !drag); if (!raf) raf = requestAnimationFrame(loop);
+  }, { passive: true });
+  document.addEventListener('mouseleave', () => root.classList.remove('cur-on'));
+  addEventListener('mousedown', (e) => { root.classList.add('cur-down'); burst(e.clientX, e.clientY); });
+  addEventListener('mouseup', () => root.classList.remove('cur-down'));
+})();
 
 /* ---------------------------------------------------------------- ظهور + رأس + تمرير */
 const rio = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); rio.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
@@ -63,7 +110,7 @@ function lifecycle(target, { near, far, make, kill, gate = Promise.resolve() }) 
     try { await gate; const i = await make(first); first = false; if (!inNear && !inFar) kill(i); else inst = i; } catch (e) { console.warn(e); } finally { busy = false; }
   };
   const release = () => { if (!inst) return; const i = inst; inst = null; try { kill(i); } catch (e) { console.warn(e); } };
-  new IntersectionObserver((es) => { inNear = es[0].isIntersecting; if (inNear) ensure(); }, { rootMargin: near }).observe(target);
+  new IntersectionObserver((es) => { inNear = es[0].isIntersecting; if (inNear) ensure(); else if (!inFar) release(); }, { rootMargin: near }).observe(target);
   new IntersectionObserver((es) => { inFar = es[0].isIntersecting; if (!inFar && !inNear) release(); }, { rootMargin: far }).observe(target);
   return { get inst() { return inst; } };
 }
@@ -79,7 +126,9 @@ const liquidLife = lifecycle($('#hero'), {
   kill: (lq) => lq && lq.destroy()
 });
 const CH_P = [0, .16, .36, .58, .82];
+let chPrev = 0;
 function setChapter(c) {
+  if (c !== chPrev) { sfx.whoosh(); if (c === 1) sfx.snap(); else if (c === 2) sfx.knife(); else if (c === 3) sfx.melt(); else if (c === 4) sfx.seal(); chPrev = c; }
   $$('#heroCopy .hc').forEach((el, i) => el.classList.toggle('on', i === c)); $$('#chDots button').forEach((b, i) => b.classList.toggle('on', i === c)); $('#hHint').classList.toggle('off', c > 0);
 }
 $('#chDots').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; const h = $('#hero'), r = h.getBoundingClientRect(), total = h.offsetHeight - innerHeight; scrollTo({ top: scrollY + r.top + CH_P[+b.dataset.i] * total + 4, behavior: reduce ? 'auto' : 'smooth' }); });
@@ -96,7 +145,11 @@ const state = { shape: 'kalp', type: 'ruby', shell: 1, fill: 'karamel', crunch: 
 let studio = null, lastFill = 'karamel', selLayer = null;
 const cfgOf = (s = state) => ({ shape: s.shape, type: s.type, shell: s.shell, fill: s.fill, crunch: s.crunch, crunchAmt: s.crunchAmt, top: s.top });
 const chipsHTML = (g, keys, label, cur, sw) => keys.map((k) => `<button type="button" class="chip ${String(k) === String(cur) ? 'on' : ''}" data-g="${g}" data-v="${k}">${sw ? `<i style="background:${sw[k]}"></i>` : ''}${esc(label(k))}</button>`).join('');
-function paintShapes() { $('#shapes').innerHTML = chipsHTML('shape', SHAPES, (k) => C.shapes[k].n, state.shape); $('#shName').textContent = C.shapes[state.shape].n; $('#shDesc').textContent = C.shapes[state.shape].d; }
+function paintShapes() {
+  const el = $('#shapes');
+  el.innerHTML = SHAPES.map((k) => `<button type="button" class="chip card ${k === state.shape ? 'on' : ''}" data-g="shape" data-v="${k}"><img src="assets/shapes/${k}.webp" alt="" width="72" height="72" decoding="async"><span>${esc(C.shapes[k].n)}</span></button>`).join('');
+  const on = $('.on', el); if (on && el.scrollWidth > el.clientWidth + 4) el.scrollLeft = on.offsetLeft - (el.clientWidth - on.offsetWidth) / 2;
+  $('#shName').textContent = C.shapes[state.shape].n; $('#shDesc').textContent = C.shapes[state.shape].d; }
 function paintWiz() {
   const T = C.steps, tablet = state.shape === 'tablet', s = state;
   const step = (n, t, val, body) => `<li class="wz"><div class="wz-h"><b>${n}</b><div><h4>${esc(t.t)}</h4><p>${esc(t.d)}</p></div><span class="wz-v">${esc(val)}</span></div><div class="wz-b">${body}</div></li>`;
@@ -124,27 +177,47 @@ function meters() {
 function paintMeters() { $('#meters').innerHTML = meters().map(([k, v]) => `<div class="mt"><span>${esc(C.meters[k])}</span><div><i style="width:${Math.round(v * 100)}%"></i></div></div>`).join(''); }
 function sync(patch) {
   if (patch && patch.shape && patch.shape !== state.shape) { if (state.shape === 'tablet') state.fill = lastFill; if (patch.shape === 'tablet') { lastFill = state.fill === 'yok' ? lastFill : state.fill; patch.fill = 'yok'; } }
+  if (patch && patch.shape === 'truf' && state.shape !== 'truf' && state.top === 'yok' && !patch.top) patch.top = 'hindistan';   // التروفل يأتي مكسواً بجوز الهند افتراضياً
   Object.assign(state, patch || {});
   paintShapes(); paintWiz(); paintLayers(); paintMeters(); if (studio) { studio.set(cfgOf()); if (selLayer) studio.highlight(selLayer); }
 }
 const onChip = (e) => {
-  const b = e.target.closest('.chip[data-g]'); if (!b) return; const g = b.dataset.g, v = b.dataset.v;
+  const b = e.target.closest('.chip[data-g]'); if (!b) return; const g = b.dataset.g, v = b.dataset.v; if (g === 'shape') sfx.drip(); else sfx.tick();
   const val = ['shell', 'crunchAmt'].includes(g) ? +v : v; if (g === 'crunch' && v === 'yok') { sync({ crunch: 'yok' }); return; }
   sync({ [g]: val });
 };
 $('#shapes').addEventListener('click', onChip); $('#wiz').addEventListener('click', onChip);
-$('#layers').addEventListener('click', (e) => { const b = e.target.closest('.ly'); if (!b) return; selLayer = selLayer === b.dataset.id ? null : b.dataset.id; paintLayers(); if (studio) studio.highlight(selLayer); });
-$('#replay').onclick = () => studio && studio.replayCut();
+const cycle = (d) => { sfx.drip(); sync({ shape: SHAPES[(SHAPES.indexOf(state.shape) + d + SHAPES.length) % SHAPES.length] }); };
+$('#shPrev').onclick = () => cycle(-1); $('#shNext').onclick = () => cycle(1);
+$('#layers').addEventListener('click', (e) => { const b = e.target.closest('.ly'); if (!b) return; selLayer = selLayer === b.dataset.id ? null : b.dataset.id; sfx.ting(); paintLayers(); if (studio) studio.highlight(selLayer); });
+$('#replay').onclick = () => { sfx.knife(); studio && studio.replayCut(); };
 $('#qMinus').onclick = () => { state.qty = Math.max(1, state.qty - 1); $('#qVal').textContent = state.qty; };
 $('#qPlus').onclick = () => { state.qty = Math.min(99, state.qty + 1); $('#qVal').textContent = state.qty; };
 sync();
 
+/* تسميات الطبقات فوق المقطع: نقطة على الطبقة + خط + شارة باسمها (تتحرك مع دوران المقطع) */
+let coKey = '';
+function paintCallouts(L) {
+  const box = $('#callouts'); if (!box) return;
+  if (!L) { if (coKey) { box.innerHTML = ''; coKey = ''; } return; }
+  const ids = ['shell', 'fill', 'crunch', 'dust'].filter((id) => L.anchors[id]), key = ids.join(',') + '|' + (selLayer || '');
+  if (key !== coKey) { coKey = key; box.innerHTML = `<svg class="co-svg">${ids.map((id) => `<line data-l="${id}"/><circle data-c="${id}" r="4"/>`).join('')}</svg>` + ids.map((id) => `<button type="button" class="co-pill ${id === selLayer ? 'on' : ''}" data-id="${id}">${esc(C.layers[id].n)}</button>`).join(''); }
+  const b = L.bbox, W = L.w, H = L.h, cx = (b.l + b.r) / 2, sw = b.r - b.l;
+  const hasCr = ids.includes('crunch'), slot = { shell: hasCr ? [b.l + sw * .2, b.t - 22] : [cx, b.t - 22], crunch: [b.l + sw * .82, b.t - 22], fill: [b.l + sw * .74, b.b + 24], dust: [b.l + sw * .14, b.b + 24] };
+  ids.forEach((id) => {
+    const pill = box.querySelector(`.co-pill[data-id="${id}"]`), pw = pill.offsetWidth || 70; let [px, py] = slot[id]; px = clamp(px, pw / 2 + 6, W - pw / 2 - 6); py = clamp(py, 16, H - 78);
+    pill.style.left = px.toFixed(1) + 'px'; pill.style.top = py.toFixed(1) + 'px';
+    const a = L.anchors[id], ln = box.querySelector(`line[data-l="${id}"]`), dot = box.querySelector(`circle[data-c="${id}"]`);
+    ln.setAttribute('x1', a.x.toFixed(1)); ln.setAttribute('y1', a.y.toFixed(1)); ln.setAttribute('x2', px.toFixed(1)); ln.setAttribute('y2', py.toFixed(1)); dot.setAttribute('cx', a.x.toFixed(1)); dot.setAttribute('cy', a.y.toFixed(1));
+  });
+}
+$('#callouts').addEventListener('click', (e) => { const b = e.target.closest('.co-pill'); if (!b) return; selLayer = selLayer === b.dataset.id ? null : b.dataset.id; sfx.ting(); paintLayers(); if (studio) studio.highlight(selLayer); });
 const studioLife = lifecycle($('#atolye'), {
   near: '650px', far: '1100px', gate: piecesReady,
   make: async (first) => {
     const m = await import('./studio3d.js'), el = first ? $('#studioPiece') : swapCanvas('studioPiece'), st = m.createStudio(el, cfgOf());
     if (!st) { $('.stage').classList.add('no-3d'); return null; }
-    st.onPick = (id) => { selLayer = id; paintLayers(); }; studio = st; if (selLayer) st.highlight(selLayer); fadeIn(el); return st;
+    st.onPick = (id) => { selLayer = id; sfx.ting(); paintLayers(); }; st.onLayout = paintCallouts; studio = st; if (selLayer) st.highlight(selLayer); fadeIn(el); return st;
   },
   kill: (st) => { if (!st) return; if (studio === st) studio = null; st.dispose(); }
 });
@@ -156,7 +229,7 @@ const itemKey = (i) => i.k === 'custom' ? 'c|' + i.text : ['p', i.shape, i.type,
 function addItem(it) {
   const hit = items.find((x) => itemKey(x) === itemKey(it));
   if (hit) { hit.qty = Math.min(99, hit.qty + it.qty); hit.thumb = it.thumb || hit.thumb; } else items.push(it);
-  saveCart(); badge(true); toast(C.toast.added); if (sheet.classList.contains('on')) renderSheet();
+  sfx.add(); saveCart(); badge(true); toast(C.toast.added); if (sheet.classList.contains('on')) renderSheet();
 }
 function badge(pop) {
   const n = items.length; $('#bagN').textContent = n; $('#bagN').classList.toggle('on', n > 0);
@@ -201,7 +274,7 @@ $('#shBody').addEventListener('click', (e) => {
   else return;
   saveCart(); badge(); renderSheet();
 });
-function openSheet() { renderSheet(); sheet.classList.add('on'); scrim.classList.add('on'); sheet.setAttribute('aria-hidden', 'false'); document.body.classList.add('noscroll'); $('#bar').classList.remove('on'); }
+function openSheet() { sfx.tick(); renderSheet(); sheet.classList.add('on'); scrim.classList.add('on'); sheet.setAttribute('aria-hidden', 'false'); document.body.classList.add('noscroll'); $('#bar').classList.remove('on'); }
 function closeSheet() { sheet.classList.remove('on'); scrim.classList.remove('on'); sheet.setAttribute('aria-hidden', 'true'); document.body.classList.remove('noscroll'); badge(); }
 $('#bag').onclick = openSheet; $('#barOpen').onclick = openSheet; $('#barSend').onclick = openSheet; $('#shClose').onclick = closeSheet; scrim.onclick = closeSheet;
 addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeSheet(); $('#done').classList.remove('on'); } });
@@ -229,7 +302,7 @@ function orderText() {
 }
 let lastUrl = '';
 function send() {
-  if (!items.length) return; lastUrl = waLink(orderText());
+  if (!items.length) return; sfx.seal(); lastUrl = waLink(orderText());
   const win = window.open(lastUrl, '_blank', 'noopener'); if (!win) location.href = lastUrl;
   $('#done').classList.add('on'); $('#done').setAttribute('aria-hidden', 'false');
 }
@@ -281,7 +354,7 @@ function paintTime() {
   $('#phases').innerHTML = C.time.phases.map((p, i) => `<li data-i="${i}"><i style="background:${ZC[i]}"></i><span><b>${esc(p)}</b><em>${esc(C.time.phaseDesc[i])}</em></span></li>`).join('');
   if (melt) melt.setType(tState.type);
 }
-$('#tRange').addEventListener('input', (e) => { tState.T = +e.target.value; tState.hours = 0; paintTime(); });
+$('#tRange').addEventListener('input', (e) => { tState.T = +e.target.value; tState.hours = 0; tState.ph = 0; sfx.tick(); paintTime(); });
 $('#tTypes').addEventListener('click', (e) => { const b = e.target.closest('.chip'); if (!b) return; tState.type = b.dataset.v; tState.hours = 0; paintTime(); });
 paintTime();
 let tLast = 0;
@@ -293,6 +366,7 @@ function timeLoop(now) {
   const n = $('#needle'); if (n) n.setAttribute('transform', `rotate(${(h / 12) * 360} 100 100)`);
   $('#cHour').textContent = h.toFixed(1).replace('.', ','); $('#mState').textContent = C.time.phases[ph]; $('#mDesc').textContent = C.time.phaseDesc[ph];
   $$('#phases li').forEach((li, i) => li.classList.toggle('on', i === ph));
+  if (ph === 2 && tState.ph !== 2) sfx.melt(); tState.ph = ph;
   if (melt) melt.setSoft(soft);
 }
 new IntersectionObserver((es) => { const v = es[0].isIntersecting; if (v && !tState.vis) { tState.vis = true; requestAnimationFrame(timeLoop); } else if (!v) tState.vis = false; }).observe($('#zaman'));

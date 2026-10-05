@@ -6,7 +6,9 @@
 */
 export const CONFIG = {
   // رقم واتساب بالصيغة الدولية بدون + ولا مسافات، مثال تركيا: 905321234567. فارغ = يفتح واتساب لاختيار جهة اتصال.
-  WA_NUMBER: '',
+  WA_NUMBER: '905310200580',
+  PHONE_DISPLAY: '+90 531 020 05 80',
+  ADDRESS: 'Gaziantep, Türkiye',
   INSTAGRAM: 'mh_chocolate22',
   CODE_PREFIX: 'MH-',
   // ساعات تقريبية حتى تبدأ القطعة بالليونة عند كل حرارة (°C): [حرارة، ساعات]. بعد آخر قيمة تُستكمل خطياً.
@@ -57,9 +59,9 @@ export const C = {
   shellLabel: 'Kabuk kalınlığı', shells: ['İnce', 'Orta', 'Kalın'],
   fills: { yok: 'Dolgusuz', sade: 'Sade ganaj', karamel: 'Karamel', frambuaz: 'Frambuaz jölesi', findik: 'Fındık kreması', fistik: 'Antep fıstığı kreması' },
   crunchLabel: 'Çıtır katman', crunch: { yok: 'Yok', findik: 'Fındık parçaları', biskuvi: 'Bisküvi çıtırı' }, amountLabel: 'Miktar', amounts: ['Az', 'Orta', 'Bol'],
-  tops: { yok: 'Sade', altin: 'Altın yaldız', fistik: 'Antep fıstığı', findik: 'Fındık', badem: 'Badem' },
+  tops: { yok: 'Sade', altin: 'Altın yaldız', hindistan: 'Hindistan cevizi', fistik: 'Antep fıstığı', findik: 'Fındık', badem: 'Badem' },
   layers: {
-    dust: { n: 'Kakao tozu', d: 'Trüfün dışındaki ince kakao tabakası.' },
+    dust: { n: 'Kaplama', d: 'Trüfün dışındaki kaplama: kakao tozu, hindistan cevizi ya da kıyılmış kuruyemiş.' },
     shell: { n: 'Kabuk', d: 'Parlak dış kabuk. Kalıpta ya da daldırılarak hazırlanır; ince kabuk daha yumuşak, kalın kabuk daha çıtır olur.' },
     fill: { n: 'Dolgu', d: 'Kabuğun içindeki yumuşak katman.' },
     crunch: { n: 'Çıtır katman', d: 'Isırınca çıtırdayan parçacıklar.' },
@@ -102,7 +104,7 @@ export const C = {
     note: 'Her çikolata taze ve sipariş üzerine hazırlandığı için fiyat sabit değildir; hız, kalite ve özen her siparişte aynıdır. Kargo ücreti alıcıya aittir.'
   },
   gallery: { kicker: 'GERÇEK ÇİKOLATALAR', h2: 'Mutfaktan sofraya.', more: 'Instagram’da daha fazlası', images: [] },
-  footer: { line: 'Evde hazırlanan butik çikolata', ig: 'Instagram', wa: 'WhatsApp', credit: 'Web: Muhammed Elhuseyin', rights: '© 2026 MH Chocolate' },
+  footer: { line: 'Kalpten gelen çikolata.', ig: 'Instagram', wa: 'WhatsApp', call: 'Ara', credit: 'Web: Muhammed Elhuseyin', rights: '© 2026 MH Chocolate' },
   cart: {
     title: 'Sepetim', empty: 'Henüz bir şey eklemedin.', emptySub: 'Atölyeden bir parça seç ya da isteğini yaz.',
     name: 'Adın', city: 'Şehir', when: 'Ne zaman lazım? (tarih)', note: 'Eklemek istediğin not',
@@ -118,3 +120,18 @@ export const C = {
     qty: 'adet', shell: 'kabuk', fill: 'dolgu', crunch: 'çıtır', top: 'üstü', custom: 'Özel istek', design: '🔗 Tasarımı gör'
   }
 };
+
+/* ---- çikolata severler için güzel sözler (şiirsel cümleler: hiçbir iddia ya da yorum uydurulmaz) ---- */
+C.quotes = [
+  'Bir parça çikolata, günün en tatlı molası.',
+  'Mutluluğun kakao kokusu vardır.',
+  'Bazı sevgiler kelimelerle değil, bir parça çikolatayla söylenir.',
+  'Çikolata, kalbin en tatlı dilidir.',
+  'Her lokmada küçük bir bayram.',
+  'Çikolata aşk gibidir: yavaş eriyince en güzelidir.',
+  'Bir kahve, bir parça çikolata ve sen.',
+  'Tatlı bir an, bir lokma kadar yakındır.'
+];
+C.quotesTitle = 'ÇİKOLATA SEVENLERE';
+['Bir parça çikolata, günün en tatlı molası.', 'Her lokmada küçük bir bayram.', 'Çikolata aşk gibidir: yavaş eriyince en güzelidir.', 'Erirken bile güzel olan tek şey.', 'Bazı sevgiler kelimelerle değil, bir parça çikolatayla söylenir.'].forEach((q, i) => { C.hero.chapters[i].q = q; });
+C.sound = { on: 'Sesi kapat', off: 'Sesi aç' };
