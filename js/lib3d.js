@@ -81,8 +81,8 @@ export function pillow(outline, H, wall = .1, K = 22) {
   for (let k = 0; k <= K; k++) rings.push(XY[k].map(([vx, vy], i) => vert(vx, HT[k][i], -vy)));
   for (let k = 0; k < K; k++) for (let i = 0; i < N; i++) { const a = rings[k][i], b = rings[k][(i + 1) % N], c = rings[k + 1][i], d = rings[k + 1][(i + 1) % N]; idx.push(a, c, b, b, c, d); }
   const w0 = [], w1 = []; for (let i = 0; i < N; i++) { const [px, py] = outline[i]; w0.push(vert(px, 0, -py)); w1.push(vert(px, -wall, -py)); }
-  for (let i = 0; i < N; i++) { const a = w0[i], b = w0[(i + 1) % N], c = w1[i], d = w1[(i + 1) % N]; idx.push(a, c, b, b, c, d); }
-  const ctr = vert(cx, -wall, -cy); for (let i = 0; i < N; i++) idx.push(ctr, w1[(i + 1) % N], w1[i]);
+  for (let i = 0; i < N; i++) { const a = w0[i], b = w0[(i + 1) % N], c = w1[i], d = w1[(i + 1) % N]; idx.push(a, b, c, b, d, c); }
+  const ctr = vert(cx, -wall, -cy); for (let i = 0; i < N; i++) idx.push(ctr, w1[i], w1[(i + 1) % N]);
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
   const nrm = g.attributes.normal;
   // نورمالات تحليلية من حقل الارتفاع نفسه (لا من مثلثات رفيعة تقع على أشعة متقاربة قرب رأس القلب والشق): تظليل ناعم تماماً
@@ -93,6 +93,61 @@ export function pillow(outline, H, wall = .1, K = 22) {
   }
   for (let i = 0; i < N; i++) { const a = rings[0][i], b = w0[i], nx = (nrm.getX(a) + nrm.getX(b)) / 2, ny = (nrm.getY(a) + nrm.getY(b)) / 2, nz = (nrm.getZ(a) + nrm.getZ(b)) / 2, l = Math.hypot(nx, ny, nz) || 1; nrm.setXYZ(a, nx / l, ny / l, nz / l); nrm.setXYZ(b, nx / l, ny / l, nz / l); }
   return g;
+}
+
+/* ------------------------------------------------------------------ قلب مضلّع (Geometric heart)
+   أوجه مسطحة بحرافٍ حادّة كقالب السيليكون الحقيقي: حلقة خارجية ناعمة الحدّ، حلقة داخلية بعدد قليل من القمم، ومحور وسطي مرتفع. قاعدة مسطّحة مغلقة. */
+export function facetHeart(S = 1, wall = .1) {
+  const O = [[0, .47], [.28, .76], [.6, .89], [.88, .77], [1, .42], [.92, .12], [.53, -.3], [.22, -.6], [0, -.9]];
+  const I = [[0, .38, .2], [.27, .62, .36], [.55, .68, .5], [.78, .55, .44], [.82, .28, .4], [.68, 0, .42], [.38, -.28, .4], [.16, -.55, .26], [0, -.7, .18]];
+  const mirror = (a, f) => a.concat(a.slice(1, -1).reverse().map(f));
+  const kO = mirror(O, ([x, y]) => [-x, y]), kI = mirror(I, ([x, y, h]) => [-x, y, h]), K = kO.length, RIM = .07 * S;
+  const pos = [], uv = [], P = (x, h, y) => [x, h, -y];
+  const tri = (a, b, c, dir) => {   // يضمن أن يكون وجه المثلث إلى الخارج
+    const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx, cx = (a[0] + b[0] + c[0]) / 3, cz = (a[2] + b[2] + c[2]) / 3;
+    const d = dir === 'up' ? ny : dir === 'down' ? -ny : nx * cx + nz * cz;
+    (d < 0 ? [a, c, b] : [a, b, c]).forEach((p) => { pos.push(p[0], p[1], p[2]); uv.push(p[0] * .5 + .5, p[2] * .5 + .5); });
+  };
+  const ring = [], u = [], ch = .18;   // حدّ مضلّع بزوايا مشطوفة قليلاً: كل ضلع وجه مسطّح
+  kO.forEach((v, i) => { const p = kO[(i + K - 1) % K], n = kO[(i + 1) % K]; ring.push([v[0] + (p[0] - v[0]) * ch, v[1] + (p[1] - v[1]) * ch], [v[0] + (n[0] - v[0]) * ch, v[1] + (n[1] - v[1]) * ch]); u.push((i - ch + K) % K, i + ch); });
+  const N = ring.length;
+  const J = (uu) => { const i0 = Math.floor(uu) % K, f = uu - Math.floor(uu), a = kI[i0], b = kI[(i0 + 1) % K]; return P(a[0] + (b[0] - a[0]) * f, (a[2] + (b[2] - a[2]) * f) * S, a[1] + (b[1] - a[1]) * f); };
+  const top = ring.map(([x, y]) => P(x, RIM, y)), low = ring.map(([x, y]) => P(x, -wall, y)), inn = u.map(J), c0 = P(0, -wall, 0);
+  for (let k = 0; k < N; k++) {
+    const k2 = (k + 1) % N;
+    tri(top[k], top[k2], inn[k2], 'up'); tri(top[k], inn[k2], inn[k], 'up');      // حزام الأوجه من الحافّة نحو الداخل
+    tri(top[k], top[k2], low[k], 'wall'); tri(top[k2], low[k2], low[k], 'wall');   // جدار القاعدة
+    tri(c0, low[k], low[k2], 'down');                                              // قاعدة مسطّحة مغلقة
+  }
+  const V = kI.map(([x, y, h]) => P(x, h * S, y)), S1 = P(0, .52 * S, .12), S2 = P(0, .45 * S, -.28), L = (i) => (i === 0 || i === 8 ? i : K - i);
+  const get = (id, left) => (id === 'a' ? S1 : id === 'b' ? S2 : V[left ? L(id) : id]);
+  [[0, 1, 'a'], [1, 2, 'a'], [2, 3, 'a'], [3, 4, 'a'], [4, 5, 'a'], [5, 'b', 'a'], [5, 6, 'b'], [6, 7, 'b'], [7, 8, 'b']].forEach((t) => {   // التاج: أوجه كبيرة مسطحة
+    tri(get(t[0], false), get(t[1], false), get(t[2], false), 'up'); tri(get(t[0], true), get(t[1], true), get(t[2], true), 'up');
+  });
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.computeVertexNormals(); return g;
+}
+
+/* ------------------------------------------------------------------ قبة مضلّعة (Fluted dome)
+   أضلاع طولية مستديرة تتجمّع عند قرص دائري صغير في القمة كما في قالب الشوكولا الحقيقي، وقاعدة مسطّحة مغلقة. */
+export function flutedDome(o = {}) {
+  const ribs = o.ribs || 16, R = o.R || 1, H = o.H || .84, Rt = o.Rt || .23, A0 = o.A0 || .15, NT = ribs * 12, NS = 44;
+  const pos = [], uv = [], idx = [], V = (x, y, z) => { pos.push(x, y, z); uv.push(x * .5 + .5, z * .5 + .5); return pos.length / 3 - 1; };
+  const lobe = (th) => { const c = Math.abs(Math.cos(ribs * th / 2)); return Math.pow(Math.sqrt(c * c + .015), .7) / Math.pow(Math.sqrt(1.015), .7); };
+  const ss = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const rows = [];
+  for (let j = 0; j <= NS; j++) {
+    const s = j / NS, a = s * Math.PI / 2, Rm = R * (Rt + (1 - Rt) * Math.cos(a)), y = H * Math.sin(a), A = A0 * (1 - ss(.82, 1, s)), row = [];
+    for (let i = 0; i < NT; i++) { const th = i / NT * TAU, r = Rm * (1 - A * (1 - lobe(th))); row.push(V(Math.cos(th) * r, y, Math.sin(th) * r)); }
+    rows.push(row);
+  }
+  for (let j = 0; j < NS; j++) for (let i = 0; i < NT; i++) { const i2 = (i + 1) % NT, a = rows[j][i], b = rows[j + 1][i], c = rows[j][i2], d = rows[j + 1][i2]; idx.push(a, b, c, c, b, d); }
+  const ring = (r, y) => Array.from({ length: NT }, (_, i) => { const th = i / NT * TAU; return V(Math.cos(th) * r, y, Math.sin(th) * r); });
+  const D0 = ring(R * Rt, H), D1 = ring(R * Rt * .9, H + .02), dc = V(0, H + .027, 0);          // قرص القمة بحافّة بارزة قليلاً
+  for (let i = 0; i < NT; i++) { const i2 = (i + 1) % NT; idx.push(D0[i], D1[i], D0[i2], D0[i2], D1[i], D1[i2], dc, D1[i2], D1[i]); }
+  const B0 = rows[0].map((id) => V(pos[id * 3], 0, pos[id * 3 + 2])), bc = V(0, 0, 0);            // قاعدة مسطّحة مغلقة
+  for (let i = 0; i < NT; i++) idx.push(bc, B0[i], B0[(i + 1) % NT]);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); return g;
 }
 
 /* ------------------------------------------------------------------ تظليل ناعم لـ ExtrudeGeometry + قطاعات */

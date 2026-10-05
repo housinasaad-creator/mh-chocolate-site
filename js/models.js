@@ -2,7 +2,7 @@
   مجسّمات الشوكولا: القطعة الكاملة (تقف على سطح، لا تطير) + القطعة المقطوعة (مقطع يُظهر الكبسولة: كبوة، حشوة، طبقة مقرمشة)
   + تزيين مجسّم فوق القطعة (ذهب/فستق/بندق/لوز) يوضع على السطح الحقيقي بالإشعاع.
 */
-import { THREE, TAU, TYPE_COLORS, FILL_COLORS, CRUNCH_COLORS, HEART, LIPS, circle, chaikin, centroid, pillow, ext, rr, shapeOf, lumpy, smooth, truffleGeo, powderOf } from './lib3d.js';
+import { THREE, TAU, TYPE_COLORS, FILL_COLORS, CRUNCH_COLORS, HEART, LIPS, circle, chaikin, centroid, pillow, ext, rr, shapeOf, lumpy, smooth, truffleGeo, powderOf, facetHeart, flutedDome } from './lib3d.js';
 
 export const SHAPES = ['tablet', 'truf', 'kalp', 'elmas', 'karamel', 'dudak'];
 export const SHELL_T = [.05, .085, .135];            // سماكة الكبوة: رقيقة، متوسطة، سميكة
@@ -18,7 +18,7 @@ export function ground(g, footprint = 1.95) {
 /* ------------------------------------------------------------------ القطعة الكاملة */
 export function buildWhole(id, M) {
   const g = new THREE.Group();
-  if (id === 'kalp') g.add(new THREE.Mesh(pillow(HEART, .52, .1, 22), M.gloss));
+  if (id === 'kalp') g.add(new THREE.Mesh(facetHeart(1, .1), M.flat));
   else if (id === 'dudak') g.add(new THREE.Mesh(pillow(LIPS, .42, .09, 22), M.gloss));
   else if (id === 'tablet') {
     const base = new THREE.Mesh(ext(rr(1.62, 2.14, .08), .05, .03, 3), M.gloss); g.add(base);
@@ -36,11 +36,7 @@ export function buildWhole(id, M) {
     const pts = [[0, 0], [.55, 0], [.95, .42], [.8, .66], [.5, .85], [0, .85]].map(([x, y]) => new THREE.Vector2(x, y));
     const m = new THREE.Mesh(new THREE.LatheGeometry(pts, 10), M.flat); m.rotation.y = Math.PI / 10; g.add(m);
   } else if (id === 'karamel') {
-    const pr = [new THREE.Vector2(1.03, 0)];
-    for (let i = 0; i <= 18; i++) { const a = i / 18 * Math.PI / 2; pr.push(new THREE.Vector2(Math.cos(a), Math.sin(a) * .82)); }
-    pr[pr.length - 1].x = .0001;
-    g.add(new THREE.Mesh(new THREE.LatheGeometry(pr, 56), M.gloss));
-    const f = new THREE.Mesh(new THREE.CylinderGeometry(.11, .11, .018, 6), M.gold); f.position.set(.04, .83, .02); g.add(f);
+    g.add(new THREE.Mesh(flutedDome(), M.gloss));
   }
   return ground(g, id === 'tablet' ? 1.9 : 1.95);
 }
@@ -48,11 +44,11 @@ export function buildWhole(id, M) {
 /* ------------------------------------------------------------------ التزيين المجسّم */
 const ray = new THREE.Raycaster(), _o = new THREE.Vector3(), _d = new THREE.Vector3(), _q = new THREE.Quaternion(), _m = new THREE.Matrix4(), _s = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0), _c = new THREE.Color();
 const toppingDefs = {
-  hindistan: { n: 84, cover: 300, geo: () => new THREE.BoxGeometry(1, .1, .3), mat: () => new THREE.MeshStandardMaterial({ roughness: .95 }), size: [.07, .125], colors: [0xf8f1e0, 0xefe5cc, 0xfffaf0, 0xe9dcc0], off: .004, shred: true },
+  ceviz: { n: 60, cover: 430, geo: () => new THREE.IcosahedronGeometry(1, 0), mat: () => new THREE.MeshStandardMaterial({ roughness: .86, flatShading: true }), size: [.04, .085], colors: [0xb48a5a, 0xc9a574, 0x96704a, 0xa57d52, 0xd8bd90], off: .012 },
   altin: { n: 40, cover: 90, geo: () => { const g = new THREE.CircleGeometry(1, 5); g.rotateX(-Math.PI / 2); return g; }, mat: (M) => M.gold, size: [.03, .07], flat: true, off: .006 },
-  fistik: { n: 56, cover: 210, geo: () => new THREE.IcosahedronGeometry(1, 0), mat: () => new THREE.MeshStandardMaterial({ roughness: .55, flatShading: true }), size: [.028, .056], colors: [0x7f9f3e, 0x9cbd55, 0xb4cf72], off: .012 },
-  findik: { n: 34, cover: 120, geo: () => new THREE.IcosahedronGeometry(1, 1), mat: () => new THREE.MeshStandardMaterial({ roughness: .62, flatShading: true }), size: [.04, .072], colors: [0xa8702f, 0xbf8a46, 0x8b5826], off: .02 },
-  badem: { n: 24, cover: 90, geo: () => new THREE.SphereGeometry(1, 10, 8), mat: () => new THREE.MeshStandardMaterial({ roughness: .7 }), size: [.065, .1], colors: [0xd9b47c, 0xe4c590, 0xc9a06a], off: .012, almond: true }
+  fistik: { n: 56, cover: 800, geo: () => new THREE.IcosahedronGeometry(1, 0), mat: () => new THREE.MeshStandardMaterial({ roughness: .55, flatShading: true }), size: [.028, .056], colors: [0x7f9f3e, 0x9cbd55, 0xb4cf72], off: .012 },
+  findik: { n: 34, cover: 430, geo: () => new THREE.IcosahedronGeometry(1, 1), mat: () => new THREE.MeshStandardMaterial({ roughness: .62, flatShading: true }), size: [.04, .072], colors: [0xa8702f, 0xbf8a46, 0x8b5826], off: .02 },
+  badem: { n: 24, cover: 380, geo: () => new THREE.SphereGeometry(1, 10, 8), mat: () => new THREE.MeshStandardMaterial({ roughness: .7 }), size: [.065, .1], colors: [0xd9b47c, 0xe4c590, 0xc9a06a], off: .012, almond: true }
 };
 export function decorate(holder, kind, M) {
   if (holder.userData.deco) { holder.remove(holder.userData.deco); const d = holder.userData.deco; d.geometry.dispose(); d.material !== M.gold && d.material.dispose(); d.dispose(); holder.userData.deco = null; }
@@ -61,16 +57,20 @@ export function decorate(holder, kind, M) {
   const box = new THREE.Box3().setFromObject(holder); box.applyMatrix4(holder.matrixWorld.clone().invert());
   const spheres = holder.userData.spheres, total = spheres ? def.cover * spheres.length : def.n;
   const geo = def.geo(), im = new THREE.InstancedMesh(geo, def.mat(M), total); let k = 0; const hits = [];
-  if (spheres) {   // تروفل: كساء بكامل السطح (جوز هند / مكسرات) بأخذ عيّنات من كل كرة بإشعاعات من الخارج نحو المركز
-    const inv = holder.matrixWorld.clone().invert(), cen = new THREE.Vector3(), nrm = new THREE.Vector3(), dir = new THREE.Vector3();
+  if (spheres) {   // تروفل: كساء من كل الجهات: عيّنات موزونة بالمساحة من مثلثات كل حبة مباشرةً (بلا إشعاعات)، تُستثنى الملاصقة للسطح فقط
+    const A = new THREE.Vector3(), B = new THREE.Vector3(), C = new THREE.Vector3(), nA = new THREE.Vector3(), nB = new THREE.Vector3(), nC = new THREE.Vector3(), e1 = new THREE.Vector3(), e2 = new THREE.Vector3();
     spheres.forEach((mesh) => {
-      mesh.geometry.computeBoundingSphere(); mesh.getWorldPosition(cen); const R = mesh.geometry.boundingSphere.radius * mesh.getWorldScale(new THREE.Vector3()).x * 1.6 + .1; let got = 0;
-      for (let tries = 0; tries < def.cover * 10 && got < def.cover; tries++) {
-        dir.set(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1); if (dir.lengthSq() < .01 || dir.lengthSq() > 1) continue; dir.normalize();
-        _o.copy(cen).addScaledVector(dir, R); _d.copy(dir).negate(); ray.set(_o, _d);
-        const h = ray.intersectObject(mesh, false)[0]; if (!h || !h.face) continue;
-        nrm.copy(h.face.normal).transformDirection(mesh.matrixWorld); if (nrm.y < -.25) continue;
-        hits.push([holder.worldToLocal(h.point.clone()), nrm.clone().transformDirection(inv)]); got++;
+      mesh.updateMatrix();
+      const pos = mesh.geometry.attributes.position, nor = mesh.geometry.attributes.normal, tris = pos.count / 3, cum = new Float32Array(tris); let tot = 0;
+      for (let t = 0; t < tris; t++) { A.fromBufferAttribute(pos, t * 3); B.fromBufferAttribute(pos, t * 3 + 1); C.fromBufferAttribute(pos, t * 3 + 2); tot += e1.subVectors(B, A).cross(e2.subVectors(C, A)).length() * .5; cum[t] = tot; }
+      for (let k = 0, got = 0; got < def.cover && k < def.cover * 3; k++) {
+        const r = Math.random() * tot; let lo = 0, hi = tris - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (cum[m] < r) lo = m + 1; else hi = m; }
+        let u = Math.random(), v = Math.random(); if (u + v > 1) { u = 1 - u; v = 1 - v; }
+        A.fromBufferAttribute(pos, lo * 3); B.fromBufferAttribute(pos, lo * 3 + 1); C.fromBufferAttribute(pos, lo * 3 + 2);
+        nA.fromBufferAttribute(nor, lo * 3); nB.fromBufferAttribute(nor, lo * 3 + 1); nC.fromBufferAttribute(nor, lo * 3 + 2);
+        const p = A.clone().addScaledVector(e1.subVectors(B, A), u).addScaledVector(e2.subVectors(C, A), v).applyMatrix4(mesh.matrix);
+        const n = nA.clone().multiplyScalar(1 - u - v).addScaledVector(nB, u).addScaledVector(nC, v).transformDirection(mesh.matrix);
+        hits.push([p, n]); got++;
       }
     });
   } else {
@@ -102,10 +102,16 @@ function domeProfile(W, H, wall) {
   for (let i = 0; i <= n; i++) { const x = W * (1 - 2 * i / n); pts.push([x, wall + (H - wall) * Math.pow(Math.max(0, 1 - Math.pow(Math.abs(x) / W, 2.4)), 1 / 2.4)]); }
   return chaikin(pts, 2);
 }
+/* القبة المضلّعة: جوانب عمودية عند القاعدة تنحني نحو قرص القمة المسطّح */
+function bellProfile(W, H, wall, Rt) {
+  const n = 28, right = [], left = [];
+  for (let i = 0; i <= n; i++) { const a = i / n * Math.PI / 2, x = W * (Rt + (1 - Rt) * Math.cos(a)), y = wall + (H - wall) * Math.sin(a); right.push([x, y]); left.unshift([-x, y]); }
+  return chaikin([[-W, 0], [W, 0], ...right, ...left], 2);
+}
 function profileOf(id) {
-  if (id === 'kalp') return domeProfile(.95, .55, .1);
+  if (id === 'kalp') return [[-.95, 0], [.95, 0], [.95, .1], [.62, .48], [.3, .58], [0, .5], [-.3, .58], [-.62, .48], [-.95, .1]];   // مقطع مضلّع حادّ الزوايا
   if (id === 'dudak') return domeProfile(.95, .44, .09);
-  if (id === 'karamel') return domeProfile(.9, .82, .07);
+  if (id === 'karamel') return bellProfile(.92, .84, .07, .23);
   if (id === 'truf') return circle(.86, 80).map(([x, y]) => [x, y + .86]);
   if (id === 'elmas') return chaikin([[-.55, 0], [.55, 0], [.95, .42], [.8, .66], [.5, .85], [-.5, .85], [-.8, .66], [-.95, .42]], 1);
   // tablet: صف من ثلاث مربعات بارزة فوق القاعدة
@@ -129,8 +135,8 @@ export function buildSlice(cfg, M) {
   const mkExt = (pts, depth, bev) => new THREE.ExtrudeGeometry(shapeOf(pts), { depth, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 2, curveSegments: 4 });
   const D = .24;
   if (cfg.shape === 'truf') { // طبقة مسحوق الكاكاو في الخارج
-    const COAT = { hindistan: 0xf3ead6, findik: 0xa8702f, fistik: 0x9cbd55, badem: 0xd9b47c, altin: 0xd8a93a };
-    const dm = M.dusty.clone(); dm.color.setHex(COAT[cfg.top] ?? powderOf(tcol)); dm.sheen = 0; dm.emissiveIntensity = 0;   // كساء التروفل: مسحوق أو جوز هند أو مكسرات
+    const COAT = { ceviz: 0xa8825a, findik: 0xa8702f, fistik: 0x9cbd55, badem: 0xd9b47c, altin: 0xd8a93a };
+    const dm = M.dusty.clone(); dm.color.setHex(COAT[cfg.top] ?? powderOf(tcol)); dm.sheen = 0; dm.emissiveIntensity = 0;   // كساء التروفل: مسحوق أو جوز أو فستق أو مكسرات
     add('dust', new THREE.Mesh(mkExt(circle(.9, 80).map(([x, y]) => [x, y + .86]), D - .02, .02), [dm, dm]));
   }
   add('shell', new THREE.Mesh(mkExt(outline, D, .02), [shellCut, shellSide]));

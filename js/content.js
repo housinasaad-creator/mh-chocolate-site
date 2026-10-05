@@ -50,18 +50,19 @@ export const C = {
   shapes: {
     tablet: { n: 'Tablet', d: 'Kırılıp paylaşılan klasik tablet.' },
     truf: { n: 'Trüf', d: 'Yumuşak ve kakaolu, ağızda dağılan.' },
-    kalp: { n: 'Kalpli', d: 'Sevdiğine en güzel mesaj.' },
+    kalp: { n: 'Kalpli', d: 'Köşeli yüzlü, parlak kalp.' },
     elmas: { n: 'Elmas', d: 'Kalıpta şekillenen, parlak yüzlü.' },
-    karamel: { n: 'Kubbe', d: 'Parlak kubbe, içi dolgulu.' },
+    karamel: { n: 'Kubbe', d: 'Oluklu, parlak kubbe; içi dolgulu.' },
     dudak: { n: 'Mutlu dudaklar', d: 'Meyve dolgulu, gülümseten şekil.' }
   },
   types: { bitter: 'Bitter', sutlu: 'Sütlü', beyaz: 'Beyaz', ruby: 'Ruby' },
   shellLabel: 'Kabuk kalınlığı', shells: ['İnce', 'Orta', 'Kalın'],
   fills: { yok: 'Dolgusuz', sade: 'Sade ganaj', karamel: 'Karamel', frambuaz: 'Frambuaz jölesi', findik: 'Fındık kreması', fistik: 'Antep fıstığı kreması' },
   crunchLabel: 'Çıtır katman', crunch: { yok: 'Yok', findik: 'Fındık parçaları', biskuvi: 'Bisküvi çıtırı' }, amountLabel: 'Miktar', amounts: ['Az', 'Orta', 'Bol'],
-  tops: { yok: 'Sade', altin: 'Altın yaldız', hindistan: 'Hindistan cevizi', fistik: 'Antep fıstığı', findik: 'Fındık', badem: 'Badem' },
+  tops: { yok: 'Sade', altin: 'Altın yaldız', ceviz: 'Ceviz', fistik: 'Antep fıstığı', findik: 'Fındık', badem: 'Badem' },
+  stepTruf: { t: 'Kaplama', d: 'Trüfün her yanını saran kıyılmış kuruyemiş' },
   layers: {
-    dust: { n: 'Kaplama', d: 'Trüfün dışındaki kaplama: kakao tozu, hindistan cevizi ya da kıyılmış kuruyemiş.' },
+    dust: { n: 'Kaplama', d: 'Trüfün dışını saran kaplama: kakao tozu ya da kıyılmış ceviz, Antep fıstığı gibi kuruyemişler.' },
     shell: { n: 'Kabuk', d: 'Parlak dış kabuk. Kalıpta ya da daldırılarak hazırlanır; ince kabuk daha yumuşak, kalın kabuk daha çıtır olur.' },
     fill: { n: 'Dolgu', d: 'Kabuğun içindeki yumuşak katman.' },
     crunch: { n: 'Çıtır katman', d: 'Isırınca çıtırdayan parçacıklar.' },

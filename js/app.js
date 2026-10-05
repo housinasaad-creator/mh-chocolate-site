@@ -17,6 +17,8 @@ const SWATCH = { bitter: '#2a130b', sutlu: '#8a5230', beyaz: '#f1e4c8', ruby: '#
 const FILLSW = { sade: '#5a3322', karamel: '#d08a2e', frambuaz: '#b01f45', findik: '#a87340', fistik: '#9db55c' };
 const CRUNSW = { findik: '#c79559', biskuvi: '#dcb87f' };
 const KEY = 'mh-cart-v2', FKEY = 'mh-form-v1';
+const topsFor = (shape) => (shape === 'truf' ? ['yok', 'ceviz', 'fistik', 'findik', 'badem'] : ['yok', 'altin', 'ceviz', 'fistik', 'findik', 'badem']);
+const COATSW = { yok: '#4a2c1c', ceviz: '#a8825a', fistik: '#9cbd55', findik: '#a8702f', badem: '#d9b47c', altin: '#e6bd5e' };
 const waLink = (text) => `https://wa.me/${CONFIG.WA_NUMBER || ''}?text=${encodeURIComponent(text)}`;
 const store = (k, v) => { try { v === undefined ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
 const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } };
@@ -158,11 +160,11 @@ function paintWiz() {
     step(1, T[0], `${C.types[s.type]} · ${C.shells[s.shell]}`, `<div class="chips">${chipsHTML('type', TYPES, (k) => C.types[k], s.type, SWATCH)}</div>${lab(C.shellLabel)}<div class="chips">${chipsHTML('shell', [0, 1, 2], (k) => C.shells[k], s.shell)}</div>`) +
     step(2, T[1], tablet ? '—' : C.fills[s.fill], tablet ? `<p class="wz-n">${esc(C.studio.tabletNote)}</p>` : `<div class="chips">${chipsHTML('fill', FILLS, (k) => C.fills[k], s.fill, FILLSW)}</div>`) +
     step(3, T[2], s.crunch === 'yok' ? C.crunch.yok : `${C.crunch[s.crunch]} · ${C.amounts[s.crunchAmt]}`, `<div class="chips">${chipsHTML('crunch', CRUNCHES, (k) => C.crunch[k], s.crunch, CRUNSW)}</div>${s.crunch !== 'yok' ? lab(C.amountLabel) + `<div class="chips">${chipsHTML('crunchAmt', [0, 1, 2], (k) => C.amounts[k], s.crunchAmt)}</div>` : ''}`) +
-    step(4, T[3], C.tops[s.top], `<div class="chips">${chipsHTML('top', TOPS, (k) => C.tops[k], s.top)}</div>`);
+    step(4, s.shape === 'truf' ? C.stepTruf : T[3], C.tops[s.top], `<div class="chips">${chipsHTML('top', topsFor(s.shape), (k) => C.tops[k], s.top)}</div>`);
 }
-const layerIds = () => { const s = state, a = []; if (s.shape === 'truf') a.push('dust'); a.push('shell'); if (s.shape !== 'tablet' && s.fill !== 'yok') a.push('fill'); if (s.crunch !== 'yok') a.push('crunch'); if (s.top !== 'yok') a.push('top'); return a; };
-function layerSub(id) { const s = state; return id === 'shell' ? `${C.types[s.type]} · ${C.shells[s.shell].toLowerCase()}` : id === 'fill' ? C.fills[s.fill] : id === 'crunch' ? `${C.crunch[s.crunch]} · ${C.amounts[s.crunchAmt].toLowerCase()}` : id === 'top' ? C.tops[s.top] : ''; }
-const layerColor = (id) => id === 'shell' ? SWATCH[state.type] : id === 'fill' ? FILLSW[state.fill] : id === 'crunch' ? CRUNSW[state.crunch] : id === 'dust' ? '#4a2c1c' : '#e6bd5e';
+const layerIds = () => { const s = state, a = []; if (s.shape === 'truf') a.push('dust'); a.push('shell'); if (s.shape !== 'tablet' && s.fill !== 'yok') a.push('fill'); if (s.crunch !== 'yok') a.push('crunch'); if (s.top !== 'yok' && s.shape !== 'truf') a.push('top'); return a; };
+function layerSub(id) { const s = state; return id === 'shell' ? `${C.types[s.type]} · ${C.shells[s.shell].toLowerCase()}` : id === 'fill' ? C.fills[s.fill] : id === 'crunch' ? `${C.crunch[s.crunch]} · ${C.amounts[s.crunchAmt].toLowerCase()}` : id === 'top' ? C.tops[s.top] : id === 'dust' ? (s.top === 'yok' ? 'Kakao tozu' : C.tops[s.top]) : ''; }
+const layerColor = (id) => id === 'shell' ? SWATCH[state.type] : id === 'fill' ? FILLSW[state.fill] : id === 'crunch' ? CRUNSW[state.crunch] : id === 'dust' ? COATSW[state.top] || COATSW.yok : '#e6bd5e';
 function paintLayers() {
   const ids = layerIds(); if (selLayer && !ids.includes(selLayer)) selLayer = null;
   $('#layers').innerHTML = ids.map((id) => { const L = C.layers[id], on = id === selLayer; return `<button type="button" class="ly ${on ? 'on' : ''}" data-id="${id}"><i style="background:${layerColor(id)}"></i><span><b>${esc(L.n)}</b><em>${esc(layerSub(id))}</em></span></button>${on ? `<p class="ly-d">${esc(L.d)}</p>` : ''}`; }).join('');
@@ -175,9 +177,12 @@ function meters() {
   return [['yog', yog], ['yum', yum], ['cit', cit], ['tat', tat]];
 }
 function paintMeters() { $('#meters').innerHTML = meters().map(([k, v]) => `<div class="mt"><span>${esc(C.meters[k])}</span><div><i style="width:${Math.round(v * 100)}%"></i></div></div>`).join(''); }
+let autoTop = false;   // زينة وضعها الموقع تلقائياً للتروفل (الجوز)، تُزال عند الخروج منه
 function sync(patch) {
+  if (patch && patch.top) autoTop = false;
   if (patch && patch.shape && patch.shape !== state.shape) { if (state.shape === 'tablet') state.fill = lastFill; if (patch.shape === 'tablet') { lastFill = state.fill === 'yok' ? lastFill : state.fill; patch.fill = 'yok'; } }
-  if (patch && patch.shape === 'truf' && state.shape !== 'truf' && state.top === 'yok' && !patch.top) patch.top = 'hindistan';   // التروفل يأتي مكسواً بجوز الهند افتراضياً
+  if (patch && patch.shape === 'truf' && state.shape !== 'truf' && (state.top === 'yok' || state.top === 'altin') && !patch.top) { patch.top = 'ceviz'; autoTop = true; }   // التروفل يأتي مكسواً بالجوز افتراضياً
+  else if (patch && patch.shape && patch.shape !== 'truf' && state.shape === 'truf' && autoTop && state.top === 'ceviz' && !patch.top) { patch.top = 'yok'; autoTop = false; }
   Object.assign(state, patch || {});
   paintShapes(); paintWiz(); paintLayers(); paintMeters(); if (studio) { studio.set(cfgOf()); if (selLayer) studio.highlight(selLayer); }
 }
@@ -223,7 +228,7 @@ const studioLife = lifecycle($('#atolye'), {
 });
 
 /* ---------------------------------------------------------------- السلة */
-let items = load(KEY, []).filter((i) => i && i.qty > 0).slice(0, 40);
+let items = load(KEY, []).filter((i) => i && i.qty > 0).slice(0, 40).map((i) => (i.top === 'hindistan' ? { ...i, top: 'ceviz' } : i));
 const saveCart = () => store(KEY, items);
 const itemKey = (i) => i.k === 'custom' ? 'c|' + i.text : ['p', i.shape, i.type, i.shell, i.fill, i.crunch, i.crunchAmt, i.top, i.note || ''].join('|');
 function addItem(it) {
@@ -310,7 +315,7 @@ $('#dOk').onclick = () => { items = []; saveCart(); orderText.code = null; $('#d
 $('#dAgain').onclick = () => { if (lastUrl) window.open(lastUrl, '_blank', 'noopener'); };
 function fromHash() {
   const m = /^#p=([a-z]+)\.([a-z]+)\.(\d)\.([a-z]+)\.([a-z]+)\.(\d)\.([a-z]+)$/.exec(location.hash); if (!m) return;
-  const [, shape, type, shell, fill, crunch, amt, top] = m;
+  let [, shape, type, shell, fill, crunch, amt, top] = m; if (top === 'hindistan' || (shape === 'truf' && top === 'altin')) top = 'ceviz';
   if (!SHAPES.includes(shape) || !TYPES.includes(type) || +shell > 2 || (fill !== 'yok' && !FILLS.includes(fill)) || !CRUNCHES.includes(crunch) || +amt > 2 || !TOPS.includes(top)) return;
   sync({ shape, type, shell: +shell, fill, crunch, crunchAmt: +amt, top }); setTimeout(() => { goTo('#atolye'); toast(C.toast.loaded); }, 900);
 }

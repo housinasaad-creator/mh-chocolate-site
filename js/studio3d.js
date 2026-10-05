@@ -35,14 +35,15 @@ export function createStudio(canvas, cfg0 = {}) {
   let wd = { hx: 1, hy: .5, hz: 1 }, sd = { hx: 1, hy: .3, hz: .2 };
   const qW = new THREE.Quaternion(), qS = new THREE.Quaternion(), qI = new THREE.Quaternion(), eul = new THREE.Euler(), tq = new THREE.Quaternion(), tv = new THREE.Vector3();
   const AY = new THREE.Vector3(0, 1, 0), AX = new THREE.Vector3(1, 0, 0), vW = { y: .5, x: 0 }, vS = { y: 0, x: 0 };
-  const WX = -1.35, SX = 1.2;
+  const WX = -1.35, SX = 1.2, REST = { kalp: .5, dudak: .5, tablet: .42 };   // القطع المسطّحة تميل نحو الكاميرا ليظهر شكلها
+  let restX = 0;
   const knife = new THREE.Mesh(new THREE.PlaneGeometry(.05, 2.4), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })); knife.position.set(0, 1, .9); scene.add(knife);
 
   function buildWholeNow() {
     if (whole) { pivot.remove(whole); whole.traverse((n) => { if (n.geometry) n.geometry.dispose(); if (n.isInstancedMesh) { n.dispose(); n.material !== M.gold && n.material.dispose(); } }); }
     whole = buildWhole(cfg.shape, M); const b = new THREE.Box3().setFromObject(whole);
     wd = { hx: (b.max.x - b.min.x) / 2, hy: (b.max.y - b.min.y) / 2, hz: (b.max.z - b.min.z) / 2 };
-    whole.position.y = -wd.hy; pivot.add(whole); pivot.position.y = wd.hy; qW.identity(); vW.y = .5; vW.x = 0;
+    whole.position.y = -wd.hy; pivot.add(whole); pivot.position.y = wd.hy; restX = REST[cfg.shape] || 0; qW.setFromEuler(eul.set(restX, restX ? -.25 : 0, 0, 'YXZ')); vW.y = restX ? 0 : .5; vW.x = 0;
     scene.updateMatrixWorld(true); decorate(whole, cfg.top, M);
   }
   function buildSliceNow(animate) {
@@ -81,7 +82,7 @@ export function createStudio(canvas, cfg0 = {}) {
   };
   paintType(M, TYPE_COLORS[cfg.type]);
   api.highlight = (id) => { lit = id; setHighlight(slice, id, tw); };
-  api.replayCut = () => { qW.identity(); qS.identity(); playCut(); };
+  api.replayCut = () => { qW.setFromEuler(eul.set(restX, restX ? -.25 : 0, 0, 'YXZ')); qS.identity(); playCut(); };
   api.wobble = () => { tw(700, (p) => { wholeHolder.rotation.z = Math.sin(p * 18) * (1 - p) * .1; }, () => { wholeHolder.rotation.z = 0; }); };
 
   /* ---------------------------------------------------------------- سحب حر 360° + نقر على الطبقات */
@@ -113,8 +114,9 @@ export function createStudio(canvas, cfg0 = {}) {
       if (Math.abs(vW.y) + Math.abs(vW.x) > .002) { tq.setFromAxisAngle(AY, vW.y * dt); qW.premultiply(tq); tq.setFromAxisAngle(AX, vW.x * dt); qW.premultiply(tq); const d = Math.exp(-dt * (idle ? 1.1 : 2.4)); vW.y *= d; vW.x *= d; }
       if (Math.abs(vS.y) + Math.abs(vS.x) > .002) { tq.setFromAxisAngle(AY, vS.y * dt); qS.premultiply(tq); tq.setFromAxisAngle(AX, vS.x * dt); qS.premultiply(tq); const d = Math.exp(-dt * 2.4); vS.y *= d; vS.x *= d; }
       if (idle) {
-        tq.setFromAxisAngle(AY, .5 * dt); qW.premultiply(tq);
-        eul.setFromQuaternion(qW, 'YXZ'); tq.setFromEuler(eul.set(0, eul.y, 0, 'YXZ')); qW.slerp(tq, 1 - Math.exp(-dt * 1.1));   // يعود أفقياً ويحتفظ بزاوية الدوران
+        if (restX) { tq.setFromEuler(eul.set(restX, Math.sin(S.time * .55) * .5 - .25, 0, 'YXZ')); qW.slerp(tq, 1 - Math.exp(-dt * 1.4)); }   // مائلة: تتمايل بهدوء بدل الدوران الكامل
+        else { tq.setFromAxisAngle(AY, .5 * dt); qW.premultiply(tq);
+        eul.setFromQuaternion(qW, 'YXZ'); tq.setFromEuler(eul.set(0, eul.y, 0, 'YXZ')); qW.slerp(tq, 1 - Math.exp(-dt * 1.1)); }   // يعود أفقياً ويحتفظ بزاوية الدوران
         qS.slerp(qI, 1 - Math.exp(-dt * 1.5));
       }
     }
