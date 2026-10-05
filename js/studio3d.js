@@ -2,7 +2,7 @@
   ورشة القطعة: القطعة الكاملة على سطح لامع (دوران 360° حر بالسحب) وبجانبها القطعة المقطوعة التي تُظهر الكبوة والحشوة والطبقة المقرمشة.
   كل تغيير في الخيارات يُعاد بناؤه فوراً في المقطع. نقر على طبقة = إبراز + إخبار الواجهة لتشرحها.
 */
-import { THREE, baseStage, TYPE_COLORS, ease, paintType } from './lib3d.js';
+import { THREE, baseStage, TYPE_COLORS, ease, paintType, powderOf } from './lib3d.js';
 import { buildWhole, buildSlice, decorate, setHighlight, disposeSlice } from './models.js';
 
 export function createStudio(canvas, cfg0 = {}) {
@@ -65,7 +65,7 @@ export function createStudio(canvas, cfg0 = {}) {
   api.set = (patch) => {
     const old = { ...cfg }; Object.assign(cfg, patch);
     if (cfg.shape !== old.shape) { buildWholeNow(); buildSliceNow(false); playCut(); }
-    if (cfg.type !== old.type) { const from = M.gloss.color.clone(), to = new THREE.Color(TYPE_COLORS[cfg.type]); tw(520, (p) => { const k = ease.io(p); M.choc.forEach((m) => m.color.copy(from).lerp(to, k)); wholeHolder.scale.setScalar(1 + Math.sin(p * Math.PI) * .05); M.gloss.envMapIntensity = M.flat.envMapIntensity = 1.35 + Math.sin(p * Math.PI) * .9; }, () => wholeHolder.scale.setScalar(1)); }
+    if (cfg.type !== old.type) { const from = M.gloss.color.clone(), to = new THREE.Color(TYPE_COLORS[cfg.type]), pf = M.truf.color.clone(), pt = new THREE.Color(powderOf(TYPE_COLORS[cfg.type])); tw(520, (p) => { const k = ease.io(p); [M.gloss, M.flat, M.cut].forEach((m) => m.color.copy(from).lerp(to, k)); M.dusty.color.copy(pf).lerp(pt, k); M.truf.color.copy(pf).lerp(pt, k); wholeHolder.scale.setScalar(1 + Math.sin(p * Math.PI) * .05); M.gloss.envMapIntensity = M.flat.envMapIntensity = 1.35 + Math.sin(p * Math.PI) * .9; }, () => wholeHolder.scale.setScalar(1)); }
     if (cfg.shape === old.shape && (cfg.type !== old.type || cfg.shell !== old.shell || cfg.fill !== old.fill || cfg.crunch !== old.crunch || cfg.crunchAmt !== old.crunchAmt)) buildSliceNow(true);
     if (cfg.top !== old.top) { decorate(whole, cfg.top, M); const d = whole.userData.deco; if (d) tw(420, (p) => d.scale.setScalar(Math.max(.001, ease.back(p)))); }
   };

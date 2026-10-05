@@ -7,6 +7,9 @@ export { THREE };
 
 export const TAU = Math.PI * 2;
 export const TYPE_COLORS = { bitter: 0x2a130b, sutlu: 0x7d4727, beyaz: 0xf0e2c4, ruby: 0xcf6a86 };
+/* لون مسحوق/طلاء التروفل لكل نوع شوكولا (كاكاو، كاكاو بحليب، سكر بودرة، وردي) */
+export const POWDER = { bitter: 0x5a3b28, sutlu: 0x80593e, beyaz: 0xf3ead7, ruby: 0xd88ba3 };
+export const powderOf = (hex) => { for (const k in TYPE_COLORS) if (TYPE_COLORS[k] === hex) return POWDER[k]; return hex; };
 export const FILL_COLORS = { sade: 0x5a3322, karamel: 0xd08a2e, frambuaz: 0xb01f45, findik: 0xa87340, fistik: 0x9db55c };
 export const CRUNCH_COLORS = { findik: 0xc79559, biskuvi: 0xdcb87f };
 export const ease = {
@@ -142,15 +145,39 @@ export function makeEnv(renderer) {
 }
 
 /* ------------------------------------------------------------------ مواد مشتركة */
+/* ضجيج قيمي ثلاثي الأبعاد + fbm: يُستعمل لتشويه سطح التروفل بشكل عضوي */
+const _h = (x, y, z) => { const h = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453; return h - Math.floor(h); };
+export function vnoise(x, y, z) { const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z), xf = x - xi, yf = y - yi, zf = z - zi, u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf), w = zf * zf * (3 - 2 * zf), l = (a, b, t) => a + (b - a) * t; return l(l(l(_h(xi, yi, zi), _h(xi + 1, yi, zi), u), l(_h(xi, yi + 1, zi), _h(xi + 1, yi + 1, zi), u), v), l(l(_h(xi, yi, zi + 1), _h(xi + 1, yi, zi + 1), u), l(_h(xi, yi + 1, zi + 1), _h(xi + 1, yi + 1, zi + 1), u), v), w); }
+export function fbm3(x, y, z, o = 4) { let s = 0, a = .5, f = 1; for (let i = 0; i < o; i++) { s += a * vnoise(x * f, y * f, z * f); f *= 2.03; a *= .5; } return s; }
+/* تروفل حقيقي: كرة غير منتظمة (مفلطحة قليلاً)، ثنيات من لفّ الإيد، حبيبات المسحوق، وألوان رؤوس تُظلِم الشقوق (cavity) */
+export function truffleGeo(seed = 1, flat = .86) {
+  const g = new THREE.SphereGeometry(1, 96, 64), p = g.attributes.position, col = new Float32Array(p.count * 3), v = new THREE.Vector3();
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i); const x = v.x, y = v.y, z = v.z;
+    const big = fbm3(x * 1.25 + seed, y * 1.25 + seed * 2, z * 1.25 + seed * 3, 3) - .5;                      // عدم انتظام الشكل
+    const rid = 1 - Math.abs(2 * fbm3(x * 3.1 + seed * 5, y * 3.1, z * 3.1 + seed * 7, 3) - 1);                // ثنيات (ridged)
+    const grain = vnoise(x * 46 + seed, y * 46, z * 46) - .5;                                                  // حبيبات المسحوق
+    let r = 1 + big * .34 - Math.pow(rid, 2.6) * .07 + grain * .012;
+    let py = y * flat; if (py < -.62) py = -.62 + (py + .62) * .15;                                            // قاعدة شبه مسطّحة تلامس السطح
+    v.set(x * r, py * r, z * r); p.setXYZ(i, v.x, v.y, v.z);
+    const cav = clamp01(.78 + big * .55 - Math.pow(rid, 2.2) * .5 + grain * .2); col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = cav;
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const ni = g.toNonIndexed(); g.dispose(); return smooth(ni);
+}
+const clamp01 = (v) => Math.max(.38, Math.min(1.08, v));
+
 export function makeMats(share) {
   const bump = share ? share.bump : speckle(256, '#fff', 40, 700);
   const dust = share ? share.dust : speckle(128, '#fff', 90, 900);
+  const grain = share ? share.grain : (() => { const t = speckle(256, '#fff', 130, 4200); t.repeat.set(3, 2); return t; })();
   const gloss = new THREE.MeshPhysicalMaterial({ color: TYPE_COLORS.bitter, roughness: .24, metalness: 0, clearcoat: 1, clearcoatRoughness: .09, envMapIntensity: 1.35, bumpMap: bump, bumpScale: .12, sheen: .15, sheenColor: new THREE.Color(0xffd7b8), sheenRoughness: .6 });
   const flat = gloss.clone(); flat.flatShading = true; flat.roughness = .2;
   const dusty = new THREE.MeshPhysicalMaterial({ color: TYPE_COLORS.bitter, roughness: .8, bumpMap: dust, bumpScale: .7, map: dust, clearcoat: 0, sheen: 1, sheenRoughness: .55, sheenColor: new THREE.Color(0xe6cdb0), envMapIntensity: .55 });
+  const truf = new THREE.MeshPhysicalMaterial({ color: POWDER.bitter, vertexColors: true, roughness: .96, bumpMap: grain, bumpScale: 2.2, map: dust, sheen: 1, sheenRoughness: .4, sheenColor: new THREE.Color(0xf1dcc4), envMapIntensity: .5, clearcoat: 0 });
   const cut = new THREE.MeshStandardMaterial({ color: TYPE_COLORS.bitter, roughness: .55, metalness: 0, envMapIntensity: .8 }); // وجه القطع: مطفي قليلاً
   const gold = new THREE.MeshStandardMaterial({ color: 0xffd875, emissive: 0x6b4a00, metalness: .9, roughness: .32, side: THREE.DoubleSide, envMapIntensity: 1.6 });
-  return { gloss, flat, dusty, cut, gold, bump, dust, choc: [gloss, flat, dusty, cut] };
+  return { gloss, flat, dusty, truf, cut, gold, bump, dust, grain, choc: [gloss, flat, dusty, truf, cut] };
 }
 
 /* ------------------------------------------------------------------ قاعدة منصّة: حلقة رسم + تفكيك */
@@ -159,7 +186,7 @@ export function baseStage(canvas, o = {}) {
   try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }); } catch (e) { return null; }
   renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = o.exposure || 1.08;
   const coarse = matchMedia('(pointer: coarse)').matches;
-  let dprMax = Math.min(devicePixelRatio || 1, coarse ? 1.75 : 2);
+  let dprMax = Math.min(devicePixelRatio || 1, o.dprCap || (coarse ? 1.75 : 2));
   const scene = new THREE.Scene(); scene.environment = makeEnv(renderer);
   const camera = new THREE.PerspectiveCamera(o.fov || 28, 1, 0.1, 60);
   const mats = makeMats();
@@ -196,7 +223,7 @@ export function baseStage(canvas, o = {}) {
     removeEventListener('resize', onWin); document.removeEventListener('visibilitychange', wake); io.disconnect(); S.onDispose && S.onDispose();
     const killMat = (m) => { ['map', 'bumpMap', 'envMap'].forEach((k) => m[k] && m[k].dispose && m[k].dispose()); m.dispose(); };
     scene.traverse((n) => { if (n.geometry) n.geometry.dispose(); if (n.isInstancedMesh) n.dispose(); if (n.material) (Array.isArray(n.material) ? n.material : [n.material]).forEach(killMat); });
-    mats.choc.forEach(killMat); mats.gold.dispose(); mats.bump.dispose(); mats.dust.dispose();
+    mats.choc.forEach(killMat); mats.gold.dispose(); mats.bump.dispose(); mats.dust.dispose(); mats.grain.dispose();
     if (scene.environment) scene.environment.dispose(); scene.environment = null;
     renderer.dispose(); renderer.forceContextLoss(); canvas.width = 1; canvas.height = 1;
   };
@@ -205,4 +232,4 @@ export function baseStage(canvas, o = {}) {
 }
 
 /* لون النوع على كل المواد المشتركة (يُستعمل مع tween) */
-export function paintType(mats, hex) { mats.choc.forEach((m) => m.color.setHex(hex)); }
+export function paintType(mats, hex) { mats.choc.forEach((m) => m.color.setHex(m === mats.dusty || m === mats.truf ? powderOf(hex) : hex)); }

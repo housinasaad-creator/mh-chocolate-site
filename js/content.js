@@ -20,10 +20,14 @@ export const CONFIG = {
 export const C = {
   title: 'MH Chocolate — Kalpten gelen çikolata',
   hero: {
-    kicker: 'MY HEART CHOCOLATE',
-    h1: ['Kalpten', 'gelen', 'çikolata.'],
-    sub: 'Her şey taze ve sipariş üzerine, evde ve elle hazırlanır. Hızlı, kaliteli, özenle.',
-    cta1: 'Parçanı tasarla', cta2: 'WhatsApp’tan yaz', hint: 'Parmağınla karıştır'
+    cta1: 'Parçanı tasarla', cta2: 'WhatsApp’tan yaz', hint: 'Kaydır',
+    chapters: [
+      { k: 'MY HEART CHOCOLATE', t: ['Kalpten', 'gelen', 'çikolata.'], s: 'Her şey taze ve sipariş üzerine, evde ve elle hazırlanır. Hızlı, kaliteli, özenle.', btns: true },
+      { k: '01 · KIR', t: ['Taze', 'kırılır.'], s: 'İyi temperlenmiş çikolata temiz bir çıtırtıyla kırılır.' },
+      { k: '02 · KES', t: ['Katman', 'katman.'], s: 'Kabuk, dolgu, çıtır parçacıklar: içi de dışı kadar özenli.' },
+      { k: '03 · ERİT', t: ['Sıcakla', 'yumuşar.'], s: 'Eriyince en güzel hali: parlak, akışkan, kakao kokulu.' },
+      { k: '04 · TASARLA', t: ['Şimdi', 'sıra sende.'], s: 'Şekli, dolguyu ve süsü sen seç; siparişin tek dokunuşla WhatsApp’ta.', btns: true }
+    ]
   },
   studio: {
     kicker: 'PARÇA ATÖLYESİ', h2: 'Kes, gör, tasarla.',

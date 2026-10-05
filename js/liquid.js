@@ -114,5 +114,5 @@ void main(){
     raf = requestAnimationFrame(frame);
   }
   resize(); raf = requestAnimationFrame((t) => { last = t; frame(t); });
-  return { resize, destroy, get dead() { return dead; }, setScale(s) { scale = s; resize(); } };
+  return { resize, destroy, get dead() { return dead; }, setScale(s) { scale = s; resize(); }, stir(x, y, s) { tpx = x; tpy = y; tps = s; lastMove = performance.now(); } };
 }

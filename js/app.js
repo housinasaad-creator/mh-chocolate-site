@@ -22,9 +22,9 @@ const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || '
 /* ---------------------------------------------------------------- نصوص ثابتة */
 function copy() {
   document.title = C.title;
-  const H = C.hero; $('#hKicker').textContent = H.kicker;
-  $('#hH1').innerHTML = H.h1.map((w) => `<span class="line"><span>${esc(w)}</span></span>`).join(' ');
-  $('#hSub').textContent = H.sub; $('#hCta1').textContent = H.cta1; $('#hCta2').textContent = H.cta2; $('#hCta2').href = waLink(C.wa.hello); $('#hHint span').textContent = H.hint;
+  const H = C.hero; $('#hHint span').textContent = H.hint;
+  $('#heroCopy').innerHTML = H.chapters.map((c, i) => `<div class="hc ${i === 0 ? 'on' : ''}" data-i="${i}"><p class="kicker">${esc(c.k)}</p><h2 class="h1 ${i ? 't1' : ''}">${c.t.map((w) => `<span class="line"><span>${esc(w)}</span></span>`).join(' ')}</h2><p class="hero-sub">${esc(c.s)}</p>${c.btns ? `<div class="hero-btns"><a class="btn" href="#atolye">${esc(H.cta1)}</a><a class="btn ghost" href="${waLink(C.wa.hello)}" target="_blank" rel="noopener">${esc(H.cta2)}</a></div>` : ''}</div>`).join('');
+  $('#chDots').innerHTML = H.chapters.map((c, i) => `<li><button type="button" data-i="${i}" aria-label="${i + 1}"></button></li>`).join('');
   const S = C.studio; $('#sKicker').textContent = S.kicker; $('#sH2').textContent = S.h2; $('#sLead').textContent = S.lead; $('#labWhole').textContent = S.whole; $('#labCut').textContent = S.cut; $('#dragHint').textContent = S.drag; $('#replayT').textContent = S.replay;
   $('#layH').textContent = S.layersTitle; $('#metH').textContent = S.metersTitle; $('#metN').textContent = S.metersNote; $('#addons').textContent = S.addons;
   $('#lQty').textContent = S.qtyLabel; $('#sNote').placeholder = S.notePh; $('#sPrice').textContent = S.priceNote; $('#sAdd').textContent = S.add;
@@ -44,7 +44,7 @@ copy();
 const rio = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); rio.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
 $$('.reveal').forEach((el) => rio.observe(el));
 const hdr = $('#hdr'); let lastY = 0;
-addEventListener('scroll', () => { const y = scrollY; hdr.classList.toggle('solid', y > 40); hdr.classList.toggle('hide', y > lastY && y > 700 && !document.body.classList.contains('noscroll')); lastY = y; }, { passive: true });
+addEventListener('scroll', () => { const y = scrollY, heroEnd = $('#hero').offsetHeight - innerHeight * .6; hdr.classList.toggle('solid', y > 40); hdr.classList.toggle('hide', y > lastY && y > heroEnd && !document.body.classList.contains('noscroll')); lastY = y; }, { passive: true });
 const goTo = (sel) => { const el = $(sel); if (el) el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); };
 $$('a[href^="#"]').forEach((a) => a.addEventListener('click', (e) => { const h = a.getAttribute('href'); if (h.length > 1) { e.preventDefault(); goTo(h); } }));
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 2400); }
@@ -76,11 +76,18 @@ const liquidLife = lifecycle($('#hero'), {
   },
   kill: (lq) => lq && lq.destroy()
 });
+const CH_P = [0, .16, .36, .58, .82];
+function setChapter(c) {
+  $$('#heroCopy .hc').forEach((el, i) => el.classList.toggle('on', i === c)); $$('#chDots button').forEach((b, i) => b.classList.toggle('on', i === c)); $('#hHint').classList.toggle('off', c > 0);
+}
+$('#chDots').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; const h = $('#hero'), r = h.getBoundingClientRect(), total = h.offsetHeight - innerHeight; scrollTo({ top: scrollY + r.top + CH_P[+b.dataset.i] * total + 4, behavior: reduce ? 'auto' : 'smooth' }); });
 const lakeLife = lifecycle($('#hero'), {
   near: '0px', far: '260px', gate: piecesReady,
-  make: async (first) => { const m = await import('./lake3d.js'), el = first ? $('#heroPiece') : swapCanvas('heroPiece'), k = m.createLake(el); if (k) fadeIn(el); return k; },
+  make: async (first) => { const m = await import('./hero3d.js'), el = first ? $('#heroPiece') : swapCanvas('heroPiece'), k = m.createHero(el, $('#hero'), { onChapter: setChapter }); if (k) fadeIn(el); return k; },
   kill: (k) => k && k.dispose()
 });
+/* الشوكولا السائلة تتحرك مع السكرول داخل الهيرو */
+addEventListener('scroll', () => { const lq = liquidLife.inst; if (!lq || lq.dead) return; const h = $('#hero'), r = h.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) return; const p = clamp(-r.top / Math.max(1, h.offsetHeight - innerHeight), 0, 1); lq.stir(Math.sin(p * 11) * .75, Math.cos(p * 8.5) * .55, .95); }, { passive: true });
 
 /* ---------------------------------------------------------------- الورشة */
 const state = { shape: 'kalp', type: 'ruby', shell: 1, fill: 'karamel', crunch: 'yok', crunchAmt: 1, top: 'yok', qty: 1 };

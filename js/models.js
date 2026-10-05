@@ -2,7 +2,7 @@
   مجسّمات الشوكولا: القطعة الكاملة (تقف على سطح، لا تطير) + القطعة المقطوعة (مقطع يُظهر الكبسولة: كبوة، حشوة، طبقة مقرمشة)
   + تزيين مجسّم فوق القطعة (ذهب/فستق/بندق/لوز) يوضع على السطح الحقيقي بالإشعاع.
 */
-import { THREE, TAU, TYPE_COLORS, FILL_COLORS, CRUNCH_COLORS, HEART, LIPS, circle, chaikin, centroid, pillow, ext, rr, shapeOf, lumpy, smooth } from './lib3d.js';
+import { THREE, TAU, TYPE_COLORS, FILL_COLORS, CRUNCH_COLORS, HEART, LIPS, circle, chaikin, centroid, pillow, ext, rr, shapeOf, lumpy, smooth, truffleGeo, powderOf } from './lib3d.js';
 
 export const SHAPES = ['tablet', 'truf', 'kalp', 'elmas', 'karamel', 'dudak'];
 export const SHELL_T = [.05, .085, .135];            // سماكة الكبوة: رقيقة، متوسطة، سميكة
@@ -29,8 +29,9 @@ export function buildWhole(id, M) {
       const b = new THREE.Mesh(t2, M.gloss); b.position.set(x, .19, z); g.add(b);
     }
   } else if (id === 'truf') {
-    const geo = lumpy(new THREE.SphereGeometry(1, 40, 28), .045, 5.5, 1.3), geo2 = lumpy(new THREE.SphereGeometry(1, 40, 28), .05, 5.1, 5.2);
-    [[-.62, .62, .22, .62], [.62, .6, .3, .6], [0, .6, -.62, .6]].forEach(([x, y, z, r], i) => { const m = new THREE.Mesh(i === 1 ? geo2 : geo, M.dusty); m.scale.setScalar(r); m.position.set(x, r, z); m.rotation.y = i * 1.7; g.add(m); });
+    // ثلاث حبات بأشكال وأحجام مختلفة (كلٌّ بعيّنة ضجيج خاصة) تلامس السطح
+    const geos = [truffleGeo(1.7, .86), truffleGeo(5.3, .8), truffleGeo(9.1, .9)];
+    [[-.62, .62, .62, .2], [.66, .58, .52, 1.9], [.02, -.58, .56, 3.7]].forEach(([x, z, r, ry], i) => { const m = new THREE.Mesh(geos[i], M.truf); m.scale.setScalar(r); m.position.set(x, r * .62, z); m.rotation.y = ry; g.add(m); });
   } else if (id === 'elmas') {
     const pts = [[0, 0], [.55, 0], [.95, .42], [.8, .66], [.5, .85], [0, .85]].map(([x, y]) => new THREE.Vector2(x, y));
     const m = new THREE.Mesh(new THREE.LatheGeometry(pts, 10), M.flat); m.rotation.y = Math.PI / 10; g.add(m);
@@ -107,12 +108,12 @@ export function buildSlice(cfg, M) {
   const add = (id, mesh) => { mesh.userData.layer = id; (layers[id] = layers[id] || []).push(mesh); grp.add(mesh); if (!ids.includes(id)) ids.push(id); };
   const outline = profileOf(cfg.shape), B = bounds(outline), T = SHELL_T[cfg.shell | 0];
   const tcol = TYPE_COLORS[cfg.type] ?? TYPE_COLORS.bitter;
-  const shellCut = new THREE.MeshStandardMaterial({ color: lighten(tcol, .1), roughness: .62, envMapIntensity: .7, emissive: 0x000000, emissiveIntensity: 0, bumpMap: M.dust, bumpScale: .5 });
+  const shellCut = new THREE.MeshStandardMaterial({ color: lighten(tcol, cfg.shape === 'truf' ? .02 : .1), roughness: .62, envMapIntensity: .7, emissive: 0x000000, emissiveIntensity: 0, bumpMap: M.dust, bumpScale: .5 });
   const shellSide = M.gloss.clone(); shellSide.color.setHex(tcol); shellSide.emissiveIntensity = 0;   // نسخ خاصة بالقطع حتى لا يتوهج المجسّم الكامل
   const mkExt = (pts, depth, bev) => new THREE.ExtrudeGeometry(shapeOf(pts), { depth, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 2, curveSegments: 4 });
   const D = .24;
   if (cfg.shape === 'truf') { // طبقة مسحوق الكاكاو في الخارج
-    const dm = M.dusty.clone(); dm.color.setHex(0x4a2c1c); dm.emissiveIntensity = 0;   // مسحوق كاكاو بني
+    const dm = M.dusty.clone(); dm.color.setHex(powderOf(tcol)); dm.sheen = 0; dm.emissiveIntensity = 0;   // مسحوق التروفل بلون النوع
     add('dust', new THREE.Mesh(mkExt(circle(.9, 80).map(([x, y]) => [x, y + .86]), D - .02, .02), [dm, dm]));
   }
   add('shell', new THREE.Mesh(mkExt(outline, D, .02), [shellCut, shellSide]));
