@@ -1,0 +1,208 @@
+/*
+  أدوات مشتركة لكل مشاهد three.js في الموقع: بيئة استوديو، مواد الشوكولا، هندسة (وسادة منفوخة، مقاطع، تنعيم)،
+  وقاعدة منصّة (رسم عند الظهور فقط، حارس دقة، تفكيك كامل للذاكرة).
+*/
+import * as THREE from './vendor/three.module.min.js';
+export { THREE };
+
+export const TAU = Math.PI * 2;
+export const TYPE_COLORS = { bitter: 0x2a130b, sutlu: 0x7d4727, beyaz: 0xf0e2c4, ruby: 0xcf6a86 };
+export const FILL_COLORS = { sade: 0x5a3322, karamel: 0xd08a2e, frambuaz: 0xb01f45, findik: 0xa87340, fistik: 0x9db55c };
+export const CRUNCH_COLORS = { findik: 0xc79559, biskuvi: 0xdcb87f };
+export const ease = {
+  out: (t) => 1 - Math.pow(1 - t, 3),
+  back: (t) => { const c = 1.7; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); },
+  io: (t) => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
+};
+
+/* ------------------------------------------------------------------ هندسة ثنائية الأبعاد */
+export function chaikin(pts, iters = 2, closed = true) {
+  let a = pts;
+  for (let k = 0; k < iters; k++) {
+    const b = [], n = a.length, m = closed ? n : n - 1;
+    if (!closed) b.push(a[0]);
+    for (let i = 0; i < m; i++) { const p = a[i], q = a[(i + 1) % n]; b.push([.75 * p[0] + .25 * q[0], .75 * p[1] + .25 * q[1]], [.25 * p[0] + .75 * q[0], .25 * p[1] + .75 * q[1]]); }
+    if (!closed) b.push(a[n - 1]);
+    a = b;
+  }
+  return a;
+}
+const heartRaw = (() => { const a = [], N = 48; for (let i = 0; i < N; i++) { const t = i / N * TAU; a.push([Math.pow(Math.sin(t), 3), (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16 + 0.155]); } return a; })();
+export const HEART = chaikin(heartRaw, 3);
+export const LIPS = (() => {
+  const pts = [], bez = (p0, p1, p2, p3, n) => { for (let i = 0; i < n; i++) { const t = i / n, u = 1 - t; pts.push([u * u * u * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t * t * t * p3[0], u * u * u * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t * t * t * p3[1]]); } };
+  bez([-1, 0], [-.78, .34], [-.45, .52], [-.12, .32], 14); pts.push([-.06, .26], [0, .22], [.06, .26]);
+  bez([.12, .32], [.45, .52], [.78, .34], [1, 0], 14); bez([1, 0], [.78, -.52], [.34, -.82], [0, -.8], 14); bez([0, -.8], [-.34, -.82], [-.78, -.52], [-1, 0], 14);
+  return chaikin(pts, 2);
+})();
+export const circle = (r = 1, n = 72) => Array.from({ length: n }, (_, i) => [Math.cos(i / n * TAU) * r, Math.sin(i / n * TAU) * r]);
+const scaleAbout = (pts, k, cx, cy) => pts.map(([x, y]) => [cx + (x - cx) * k, cy + (y - cy) * k]);
+export const centroid = (pts) => { let x = 0, y = 0; pts.forEach((p) => { x += p[0]; y += p[1]; }); return [x / pts.length, y / pts.length]; };
+export const scaleOutline = scaleAbout;
+
+/* ------------------------------------------------------------------ وسادة منفوخة (قطعة مصبوبة)
+   حلقات من الحدّ نحو المركز، والارتفاع يعتمد على المسافة الحقيقية إلى الحدّ (كنفخ بالون): لا "قرون" عند الشقّ في القلب. */
+/* إعادة أخذ عيّنات من حدّ مغلق بمسافات متساوية (Chaikin يكدّس النقاط عند الزوايا فتظهر مثلثات رفيعة ببقع تظليل) */
+export function resample(pts, n) {
+  const m = pts.length, len = [0]; for (let i = 0; i < m; i++) { const a = pts[i], b = pts[(i + 1) % m]; len.push(len[i] + Math.hypot(b[0] - a[0], b[1] - a[1])); }
+  const L = len[m], out = []; let j = 0;
+  for (let i = 0; i < n; i++) { const d = (i / n) * L; while (len[j + 1] < d) j++; const a = pts[j % m], b = pts[(j + 1) % m], f = (d - len[j]) / ((len[j + 1] - len[j]) || 1); out.push([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]); }
+  return out;
+}
+/* نفخ سلس (معادلة بواسون بطريقة SOR على شبكة): ارتفاع ناعم بلا طيّات على المحور الأوسط، كبالون ممتلئ */
+export function inflater(outline) {
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; outline.forEach(([x, y]) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); });
+  const n = 64, dx = (x1 - x0) / (n - 3), dy = (y1 - y0) / (n - 3), ox = x0 - dx, oy = y0 - dy, phi = new Float32Array(n * n), mask = new Uint8Array(n * n);
+  const inside = (x, y) => { let c = false; for (let i = 0, j = outline.length - 1; i < outline.length; j = i++) { const [xi, yi] = outline[i], [xj, yj] = outline[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) mask[j * n + i] = inside(ox + i * dx, oy + j * dy) ? 1 : 0;
+  const w = 1.88, c = dx * dy;
+  for (let it = 0; it < 190; it++) for (let j = 1; j < n - 1; j++) for (let i = 1; i < n - 1; i++) { const k = j * n + i; if (!mask[k]) continue; const nb = phi[k - 1] + phi[k + 1] + phi[k - n] + phi[k + n]; phi[k] += w * ((nb + c) / 4 - phi[k]); }
+  let mx = 0; for (let k = 0; k < phi.length; k++) mx = Math.max(mx, phi[k]);
+  const at = (i, j) => phi[Math.min(n - 1, Math.max(0, j)) * n + Math.min(n - 1, Math.max(0, i))] / mx;
+  const cr = (p0, p1, p2, p3, t) => .5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t);
+  // استيفاء ثنائي التكعيب (Catmull-Rom): المشتقات مستمرة، فلا طيّات على شبكة الحل
+  return (x, y) => { const fx = Math.min(n - 1.001, Math.max(0, (x - ox) / dx)), fy = Math.min(n - 1.001, Math.max(0, (y - oy) / dy)), i = fx | 0, j = fy | 0, tx = fx - i, ty = fy - j; const col = (jj) => cr(at(i - 1, jj), at(i, jj), at(i + 1, jj), at(i + 2, jj), tx); return cr(col(j - 1), col(j), col(j + 1), col(j + 2), ty); };
+}
+export function pillow(outline, H, wall = .1, K = 22) {
+  { let a = 0; for (let i = 0; i < outline.length; i++) { const p = outline[i], q = outline[(i + 1) % outline.length]; a += p[0] * q[1] - q[0] * p[1]; } if (a > 0) outline = outline.slice().reverse(); }
+  outline = resample(outline, 220);   // اتجاه ثابت (مع عقارب الساعة) كي لا ينقلب السطح
+  const N = outline.length, [cx, cy] = centroid(outline), pos = [], idx = [], uv = [], hAt = inflater(outline);
+  const vert = (x, y, z) => { pos.push(x, y, z); uv.push(x * .5 + .5, z * .5 + .5); return pos.length / 3 - 1; };
+  const rings = [], HT = [], XY = [];
+  for (let k = 0; k <= K; k++) {
+    const s = 1 - Math.pow(k / K, 1.7), ht = [], xy = [];
+    for (let i = 0; i < N; i++) { const [px, py] = outline[i], vx = cx + (px - cx) * s, vy = cy + (py - cy) * s; xy.push([vx, vy]); ht.push(k === 0 ? 0 : H * Math.sqrt(Math.min(1, Math.max(0, hAt(vx, vy))))); }
+    HT.push(ht); XY.push(xy);
+  }
+  for (let it = 0; it < 3; it++) for (let k = 1; k < K; k++) { HT[k] = HT[k].map((y, i) => .5 * y + .125 * (HT[k][(i + 1) % N] + HT[k][(i + N - 1) % N]) + .125 * (HT[k - 1][i] + HT[k + 1][i])); }
+  for (let k = 0; k <= K; k++) rings.push(XY[k].map(([vx, vy], i) => vert(vx, HT[k][i], -vy)));
+  for (let k = 0; k < K; k++) for (let i = 0; i < N; i++) { const a = rings[k][i], b = rings[k][(i + 1) % N], c = rings[k + 1][i], d = rings[k + 1][(i + 1) % N]; idx.push(a, c, b, b, c, d); }
+  const w0 = [], w1 = []; for (let i = 0; i < N; i++) { const [px, py] = outline[i]; w0.push(vert(px, 0, -py)); w1.push(vert(px, -wall, -py)); }
+  for (let i = 0; i < N; i++) { const a = w0[i], b = w0[(i + 1) % N], c = w1[i], d = w1[(i + 1) % N]; idx.push(a, c, b, b, c, d); }
+  const ctr = vert(cx, -wall, -cy); for (let i = 0; i < N; i++) idx.push(ctr, w1[(i + 1) % N], w1[i]);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+  const nrm = g.attributes.normal;
+  // نورمالات تحليلية من حقل الارتفاع نفسه (لا من مثلثات رفيعة تقع على أشعة متقاربة قرب رأس القلب والشق): تظليل ناعم تماماً
+  const e = .006;
+  for (let k = 2; k <= K; k++) for (let i = 0; i < N; i++) {
+    const [vx, vy] = XY[k][i], gx = (hAt(vx + e, vy) - hAt(vx - e, vy)) / (2 * e), gy = (hAt(vx, vy + e) - hAt(vx, vy - e)) / (2 * e), f = H / (2 * Math.sqrt(Math.max(hAt(vx, vy), 2e-3)));
+    let nx = -f * gx, ny = 1, nz = f * gy; const l = Math.hypot(nx, ny, nz); nrm.setXYZ(rings[k][i], nx / l, ny / l, nz / l);
+  }
+  for (let i = 0; i < N; i++) { const a = rings[0][i], b = w0[i], nx = (nrm.getX(a) + nrm.getX(b)) / 2, ny = (nrm.getY(a) + nrm.getY(b)) / 2, nz = (nrm.getZ(a) + nrm.getZ(b)) / 2, l = Math.hypot(nx, ny, nz) || 1; nrm.setXYZ(a, nx / l, ny / l, nz / l); nrm.setXYZ(b, nx / l, ny / l, nz / l); }
+  return g;
+}
+
+/* ------------------------------------------------------------------ تظليل ناعم لـ ExtrudeGeometry + قطاعات */
+export function smooth(g) {
+  const pos = g.attributes.position, n = pos.count, key = new Map(), acc = [], idx = new Array(n);
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), fn = new THREE.Vector3(), e = new THREE.Vector3();
+  for (let i = 0; i < n; i++) { const k = Math.round(pos.getX(i) * 1e4) + '_' + Math.round(pos.getY(i) * 1e4) + '_' + Math.round(pos.getZ(i) * 1e4); let id = key.get(k); if (id === undefined) { id = acc.length; key.set(k, id); acc.push(new THREE.Vector3()); } idx[i] = id; }
+  for (let i = 0; i < n; i += 3) { a.fromBufferAttribute(pos, i); b.fromBufferAttribute(pos, i + 1); c.fromBufferAttribute(pos, i + 2); fn.subVectors(c, b); e.subVectors(a, b); fn.cross(e); acc[idx[i]].add(fn); acc[idx[i + 1]].add(fn); acc[idx[i + 2]].add(fn); }
+  const nor = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const v = acc[idx[i]].clone().normalize(); nor[i * 3] = v.x; nor[i * 3 + 1] = v.y; nor[i * 3 + 2] = v.z; }
+  g.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); return g;
+}
+export function rr(w, h, r) { const s = new THREE.Shape(), x = -w / 2, y = -h / 2; s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r); s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h); s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r); s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y); return s; }
+export function ext(shape, depth, bev, seg = 5, size = bev) {
+  const g = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelThickness: bev, bevelSize: size, bevelSegments: seg, curveSegments: 8 });
+  g.rotateX(-Math.PI / 2); return smooth(g);
+}
+export const shapeOf = (pts) => { const s = new THREE.Shape(); pts.forEach(([x, y], i) => (i ? s.lineTo(x, y) : s.moveTo(x, y))); s.closePath(); return s; };
+export function lumpy(g, amp, f, seed) {
+  const p = g.attributes.position, v = new THREE.Vector3();
+  for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); const n = Math.sin(v.x * f + seed) * Math.sin(v.y * f * 1.3 + seed * 2) * Math.sin(v.z * f * .9 + seed * 3) + .5 * Math.sin(v.x * f * 2.7 + v.y * f * 2.1 + seed) * Math.sin(v.z * f * 3.1); v.multiplyScalar(1 + amp * n); p.setXYZ(i, v.x, v.y, v.z); }
+  g.computeVertexNormals(); return g;
+}
+export function speckle(size, base, spread, dots, tint) {
+  const c = document.createElement('canvas'); c.width = c.height = size; const g = c.getContext('2d');
+  g.fillStyle = base; g.fillRect(0, 0, size, size);
+  for (let i = 0; i < dots; i++) { const v = 128 + (Math.random() - .5) * spread; g.fillStyle = `rgba(${v},${v},${v},${Math.random() * .5})`; g.beginPath(); g.arc(Math.random() * size, Math.random() * size, Math.random() * 2.4 + .4, 0, TAU); g.fill(); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.NoColorSpace; return t;
+}
+export function fit(group, size) {
+  const b = new THREE.Box3().setFromObject(group), s = new THREE.Vector3(), c = new THREE.Vector3(); b.getSize(s); b.getCenter(c);
+  const k = size / Math.max(s.x, s.y, s.z); group.children.forEach((ch) => ch.position.sub(c)); group.scale.setScalar(k); return group;
+}
+
+/* ------------------------------------------------------------------ بيئة استوديو (انعكاسات نوافذ وإضاءة ناعمة) */
+export function makeEnv(renderer) {
+  const sc = new THREE.Scene();
+  sc.add(new THREE.Mesh(new THREE.SphereGeometry(10, 24, 16), new THREE.MeshBasicMaterial({ color: 0x0e0604, side: THREE.BackSide })));
+  // نوافذ إضاءة بتدرّج (soft boxes): تعطي انعكاسات مستطيلة ناعمة الحواف كما في تصوير الشوكولا الحقيقي
+  const gc = document.createElement('canvas'); gc.width = 8; gc.height = 64; { const g = gc.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 64); gr.addColorStop(0, '#fff'); gr.addColorStop(.55, '#d8d0c8'); gr.addColorStop(1, '#4a423c'); g.fillStyle = gr; g.fillRect(0, 0, 8, 64); }
+  const grad = new THREE.CanvasTexture(gc); grad.colorSpace = THREE.SRGBColorSpace;
+  const panel = (w, h, col, k, pos, rollZ = 0) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: grad, color: new THREE.Color(col).multiplyScalar(k), side: THREE.DoubleSide })); m.position.set(...pos); m.lookAt(0, 0, 0); m.rotateZ(rollZ); sc.add(m); };
+  panel(7, 3.2, 0xfff1dd, 9, [-4, 7, 5]);        // نافذة علوية دافئة
+  panel(1.3, 9, 0xfff6ea, 7, [-8, 2, 1]);        // شريط عمودي يسار
+  panel(1.3, 9, 0xffe7cf, 4.5, [8, 2, 2]);       // شريط عمودي يمين
+  panel(3.5, 6, 0xff7fb0, 1.5, [6, 1, -4]);      // وردي خفيف من الخلف
+  panel(10, 2.4, 0xffd49a, 3.4, [0, 6, -8]);     // ضوء خلفي ذهبي
+  panel(4, 2, 0xfff3e6, 3, [3, 3, 8]);           // ملء أمامي خفيف
+  panel(10, 10, 0x35190f, .6, [0, -6, 0]);
+  const pm = new THREE.PMREMGenerator(renderer), rt = pm.fromScene(sc, 0.02); pm.dispose(); grad.dispose(); return rt.texture;
+}
+
+/* ------------------------------------------------------------------ مواد مشتركة */
+export function makeMats(share) {
+  const bump = share ? share.bump : speckle(256, '#fff', 40, 700);
+  const dust = share ? share.dust : speckle(128, '#fff', 90, 900);
+  const gloss = new THREE.MeshPhysicalMaterial({ color: TYPE_COLORS.bitter, roughness: .24, metalness: 0, clearcoat: 1, clearcoatRoughness: .09, envMapIntensity: 1.35, bumpMap: bump, bumpScale: .12, sheen: .15, sheenColor: new THREE.Color(0xffd7b8), sheenRoughness: .6 });
+  const flat = gloss.clone(); flat.flatShading = true; flat.roughness = .2;
+  const dusty = new THREE.MeshPhysicalMaterial({ color: TYPE_COLORS.bitter, roughness: .8, bumpMap: dust, bumpScale: .7, map: dust, clearcoat: 0, sheen: 1, sheenRoughness: .55, sheenColor: new THREE.Color(0xe6cdb0), envMapIntensity: .55 });
+  const cut = new THREE.MeshStandardMaterial({ color: TYPE_COLORS.bitter, roughness: .55, metalness: 0, envMapIntensity: .8 }); // وجه القطع: مطفي قليلاً
+  const gold = new THREE.MeshStandardMaterial({ color: 0xffd875, emissive: 0x6b4a00, metalness: .9, roughness: .32, side: THREE.DoubleSide, envMapIntensity: 1.6 });
+  return { gloss, flat, dusty, cut, gold, bump, dust, choc: [gloss, flat, dusty, cut] };
+}
+
+/* ------------------------------------------------------------------ قاعدة منصّة: حلقة رسم + تفكيك */
+export function baseStage(canvas, o = {}) {
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }); } catch (e) { return null; }
+  renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = o.exposure || 1.08;
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  let dprMax = Math.min(devicePixelRatio || 1, coarse ? 1.75 : 2);
+  const scene = new THREE.Scene(); scene.environment = makeEnv(renderer);
+  const camera = new THREE.PerspectiveCamera(o.fov || 28, 1, 0.1, 60);
+  const mats = makeMats();
+  const tweens = []; const tw = (dur, fn, done) => tweens.push({ t0: performance.now(), dur, fn, done });
+  const S = { renderer, scene, camera, mats, coarse, tw, tweens, canvas, vis: false, disposed: false, onFrame: null, onResize: null, time: 0 };
+  let raf = 0, last = 0, acc = 0, frames = 0, slow = 0; const cap = coarse ? 1 / 30 : 1 / 60;
+  function resize() {
+    const w = canvas.clientWidth || 300, h = canvas.clientHeight || 300; renderer.setPixelRatio(dprMax); renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    S.onResize && S.onResize(w, h);
+  }
+  function frame(now) {
+    raf = 0; if (S.disposed || !S.vis || document.hidden) return;
+    const dtRaw = Math.min(.05, (now - last) / 1000); last = now; acc += dtRaw;
+    if (acc < cap * .9) { raf = requestAnimationFrame(frame); return; }
+    const dt = acc; acc = 0; S.time += dt;
+    for (let i = tweens.length - 1; i >= 0; i--) { const t = tweens[i], p = Math.min(1, (now - t.t0) / t.dur); t.fn(p); if (p >= 1) { tweens.splice(i, 1); t.done && t.done(); } }
+    S.onFrame && S.onFrame(dt, now);
+    renderer.render(scene, camera);
+    frames++; if (dt > .045) slow++;
+    if (frames === 50) { if (slow > 22 && dprMax > 1) { dprMax = Math.max(1, dprMax - .3); resize(); } frames = 0; slow = 0; }
+    raf = requestAnimationFrame(frame);
+  }
+  const wake = () => { if (!S.disposed && S.vis && !raf && !document.hidden) { last = performance.now(); raf = requestAnimationFrame(frame); } };
+  const io = new IntersectionObserver((es) => { S.vis = es[0].isIntersecting; wake(); }, { rootMargin: '80px' }); io.observe(canvas);
+  const onWin = () => resize(); addEventListener('resize', onWin); document.addEventListener('visibilitychange', wake);
+  S.resize = resize; S.wake = wake;
+  S.settle = () => { for (const t of tweens.splice(0)) { t.fn(1); t.done && t.done(); } };
+  S.snapshot = (px = 150) => {
+    S.settle(); renderer.render(scene, camera);
+    const c = document.createElement('canvas'), r = canvas.width / canvas.height; c.width = px; c.height = Math.round(px / r); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/webp', .82);
+  };
+  S.dispose = () => {
+    if (S.disposed) return; S.disposed = true; S.vis = false; cancelAnimationFrame(raf); raf = 0; tweens.length = 0;
+    removeEventListener('resize', onWin); document.removeEventListener('visibilitychange', wake); io.disconnect(); S.onDispose && S.onDispose();
+    const killMat = (m) => { ['map', 'bumpMap', 'envMap'].forEach((k) => m[k] && m[k].dispose && m[k].dispose()); m.dispose(); };
+    scene.traverse((n) => { if (n.geometry) n.geometry.dispose(); if (n.isInstancedMesh) n.dispose(); if (n.material) (Array.isArray(n.material) ? n.material : [n.material]).forEach(killMat); });
+    mats.choc.forEach(killMat); mats.gold.dispose(); mats.bump.dispose(); mats.dust.dispose();
+    if (scene.environment) scene.environment.dispose(); scene.environment = null;
+    renderer.dispose(); renderer.forceContextLoss(); canvas.width = 1; canvas.height = 1;
+  };
+  S.resize();
+  return S;
+}
+
+/* لون النوع على كل المواد المشتركة (يُستعمل مع tween) */
+export function paintType(mats, hex) { mats.choc.forEach((m) => m.color.setHex(hex)); }

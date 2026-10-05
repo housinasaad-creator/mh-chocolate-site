@@ -2,11 +2,13 @@
 
 Static website (HTML/CSS/vanilla JS, no build step) for a home chocolatier who makes everything to order.
 
-- Hero: a raw-WebGL fragment shader of swirling melted chocolate you can stir with a finger, with a real-time 3D chocolate piece on top (three.js r172, vendored).
-- Studio: six 3D pieces, switch chocolate type and add real 3D toppings, then add to the bag.
-- Bag: no prices and no payment. Checkout builds a ready-to-send WhatsApp message with the whole order, a link that reopens each 3D design, and an order code.
-- Performance: every heavy canvas (liquid, hero piece, studio piece) is fully disposed when it scrolls far off-screen and rebuilt before it comes back. Touch devices are capped at 30 fps and a resolution governor lowers quality on slow devices.
+- Hero: raw-WebGL melted chocolate you stir with a finger, with real-time 3D pieces half-sunk in the liquid (free 360 degree drag).
+- Studio: six 3D pieces, each shown whole next to its cut-open half. Four steps (chocolate and shell thickness, filling, crunchy layer, topping) rebuild the cross-section live; tap a layer to see what it is. Live taste meters.
+- Time and temperature: a self-running clock, a thermometer and a 3D piece that softens and melts with temperature and time.
+- How it is made: a tempering curve that draws as you scroll.
+- Bag: no prices, no payment. Checkout builds a ready-to-send WhatsApp message with the whole order, a link that reopens each design, and an order code.
+- Performance: every heavy canvas is fully disposed (geometry, materials, textures, WebGL context) when it scrolls far off-screen and rebuilt before it returns; 30 fps cap and a resolution governor on touch devices.
 
-Text and settings (WhatsApp number, Instagram handle) live in `js/content.js`. Run locally with any static server (ES modules need one), for example `python -m http.server`.
+Text and settings (WhatsApp number, Instagram handle, approximate temperature and time tables) live in `js/content.js`. Run locally with any static server, for example `python -m http.server`.
 
 Designed and developed by Muhammed Elhuseyin.

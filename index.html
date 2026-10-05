@@ -5,15 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1b0e0a">
 <title>MH Chocolate — Kalpten gelen çikolata</title>
-<meta name="description" content="Evde, elle ve sadece sipariş üzerine hazırlanan çikolata. Parçanı 3D tasarla, sepete ekle, siparişini WhatsApp’tan gönder.">
+<meta name="description" content="Evde, elle ve sadece sipariş üzerine hazırlanan çikolata. Parçayı ortadan kes, katmanlarını gör, tasarla ve siparişini WhatsApp’tan gönder.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="MH Chocolate — Kalpten gelen çikolata">
-<meta property="og:description" content="Parçanı 3D tasarla, siparişini tek dokunuşla WhatsApp’tan gönder.">
+<meta property="og:description" content="Parçayı kes, katmanlarını gör, kendi çikolatanı tasarla. Siparişin tek dokunuşla WhatsApp’ta.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231b0e0a'/%3E%3Ctext x='50' y='66' font-family='Georgia,serif' font-size='46' fill='%23d0548f' text-anchor='middle'%3EMH%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/v2.css">
 </head>
 <body class="is-loading">
 
@@ -36,11 +37,11 @@
 </header>
 
 <main id="top">
-  <!-- ======== الهيرو: شوكولا سائلة تُخلط + قطعة ثلاثية الأبعاد ======== -->
+  <!-- ======== الهيرو: بحيرة شوكولا سائلة تُخلط + قطع غاطسة فيها ======== -->
   <section class="hero" id="hero">
     <canvas class="liq" id="liq"></canvas>
     <div class="hero-shade" aria-hidden="true"></div>
-    <canvas class="hero-piece" id="heroPiece" aria-label="Çikolata parçası"></canvas>
+    <canvas class="hero-piece" id="heroPiece" aria-label="Çikolata parçaları"></canvas>
     <div class="hero-copy">
       <p class="kicker" id="hKicker"></p>
       <h1 class="h1" id="hH1"></h1>
@@ -53,9 +54,7 @@
     <p class="stir" id="hHint"><i></i><span></span></p>
   </section>
 
-  <div class="marquee" aria-hidden="true"><div class="marquee-in" id="marq"></div></div>
-
-  <!-- ======== ورشة القطع ======== -->
+  <!-- ======== ورشة القطعة: كاملة + مقطوعة، أربع خطوات، طبقات، مؤشرات ======== -->
   <section class="studio" id="atolye">
     <div class="wrap">
       <header class="sec-head reveal">
@@ -63,44 +62,78 @@
         <h2 class="h2" id="sH2"></h2>
         <p class="lead" id="sLead"></p>
       </header>
+      <nav class="shapes reveal" id="shapes" aria-label="Şekil"></nav>
       <div class="studio-grid">
-        <div class="stage reveal">
-          <div class="stage-glow" aria-hidden="true"></div>
-          <canvas id="studioPiece" aria-label="3D çikolata"></canvas>
-          <button class="nav-btn prev" id="shPrev" type="button" aria-label="Önceki"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <button class="nav-btn next" id="shNext" type="button" aria-label="Sonraki"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="stage">
+          <canvas id="studioPiece" aria-label="3D çikolata ve kesiti"></canvas>
+          <p class="tag tag-l" id="labWhole"></p><p class="tag tag-r" id="labCut"></p>
           <p class="stage-cap"><b id="shName"></b><span id="shDesc"></span></p>
           <p class="drag-hint" id="dragHint"></p>
+          <button class="replay" id="replay" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="replayT"></span></button>
         </div>
-        <div class="opts reveal">
-          <div class="og"><h3 id="lShape"></h3><div class="chips" id="cShape"></div></div>
-          <div class="og"><h3 id="lType"></h3><div class="chips" id="cType"></div></div>
-          <div class="og"><h3 id="lTop"></h3><div class="chips" id="cTop"></div></div>
-          <div class="og"><h3 id="lFill"></h3><div class="chips" id="cFill"></div></div>
-          <div class="og row"><h3 id="lQty"></h3><div class="qty"><button type="button" id="qMinus" aria-label="-">−</button><b id="qVal">1</b><button type="button" id="qPlus" aria-label="+">+</button></div></div>
-          <textarea class="field" id="sNote" rows="2" maxlength="240"></textarea>
-          <button class="btn block" id="sAdd" type="button"></button>
-          <p class="price-note" id="sPrice"></p>
+        <div class="panel">
+          <ol class="wiz" id="wiz"></ol>
+          <div class="info reveal">
+            <h3 class="sub-h" id="layH"></h3>
+            <div class="layers" id="layers"></div>
+            <p class="addons" id="addons"></p>
+            <h3 class="sub-h" id="metH"></h3>
+            <div class="meters" id="meters"></div>
+            <p class="small" id="metN"></p>
+          </div>
+          <div class="buy">
+            <div class="og row"><h3 id="lQty"></h3><div class="qty"><button type="button" id="qMinus" aria-label="-">−</button><b id="qVal">1</b><button type="button" id="qPlus" aria-label="+">+</button></div></div>
+            <textarea class="field" id="sNote" rows="2" maxlength="240"></textarea>
+            <button class="btn block" id="sAdd" type="button"></button>
+            <p class="price-note" id="sPrice"></p>
+          </div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ======== زمن وحرارة: ساعة تعمل وحدها + مقياس حرارة + قطعة تلين ======== -->
+  <section class="time" id="zaman">
+    <div class="wrap">
+      <header class="sec-head reveal"><p class="kicker" id="tKicker"></p><h2 class="h2" id="tH2"></h2><p class="lead" id="tLead"></p></header>
+      <div class="time-grid">
+        <div class="melt reveal"><canvas id="meltCanvas" aria-label="Eriyen çikolata"></canvas><p class="melt-state"><b id="mState"></b><span id="mDesc"></span></p></div>
+        <div class="gauges reveal">
+          <div class="og"><h3 id="tTypeL"></h3><div class="chips" id="tTypes"></div></div>
+          <div class="clock-wrap"><svg id="clock" viewBox="0 0 200 200" aria-hidden="true"></svg><div class="clock-c"><b id="cHour">0</b><span id="cUnit"></span></div></div>
+          <div class="temp-row">
+            <svg class="therm" id="therm" viewBox="0 0 70 230" aria-hidden="true"></svg>
+            <div class="temp-ctl"><h3 id="tTempL"></h3><div class="temp-val"><b id="tVal">22</b><i>°C</i></div><input type="range" id="tRange" min="10" max="36" step="1" value="22" aria-label="Sıcaklık"><p class="zone" id="tZone"></p></div>
+          </div>
+          <p class="stable" id="tStable"></p>
+          <ul class="phases" id="phases"></ul>
+          <p class="small" id="tNote"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======== كيف تتحضّر: منحنى التمبرة ======== -->
+  <section class="craft" id="hazirlik">
+    <div class="wrap">
+      <header class="sec-head center reveal"><p class="kicker" id="kKicker"></p><h2 class="h2" id="kH2"></h2><p class="lead" id="kLead"></p></header>
+      <div class="og center reveal"><h3 id="kTypeL"></h3><div class="chips" id="kTypes"></div></div>
+      <div class="curve-wrap reveal"><svg id="curve" viewBox="0 0 820 340" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg><div class="curve-read"><b id="kDeg">22</b><i>°C</i></div></div>
+      <ol class="csteps" id="csteps"></ol>
+      <p class="how-note" id="kNote"></p>
     </div>
   </section>
 
   <!-- ======== طلب خاص ======== -->
   <section class="custom" id="ozel">
     <div class="wrap narrow">
-      <header class="sec-head reveal">
-        <p class="kicker" id="cKicker"></p>
-        <h2 class="h2" id="cH2"></h2>
-        <p class="lead" id="cLead"></p>
-      </header>
+      <header class="sec-head reveal"><p class="kicker" id="cKicker"></p><h2 class="h2" id="cH2"></h2><p class="lead" id="cLead"></p></header>
       <div class="chips reveal" id="cuChips"></div>
       <textarea class="field big reveal" id="cuText" rows="4" maxlength="600"></textarea>
       <button class="btn reveal" id="cuAdd" type="button"></button>
     </div>
   </section>
 
-  <!-- ======== معرض صور حقيقية (يظهر فقط حين تُضاف الصور) ======== -->
   <section class="gallery" id="galeri" hidden>
     <div class="wrap">
       <header class="sec-head reveal"><p class="kicker" id="gKicker"></p><h2 class="h2" id="gH2"></h2></header>
@@ -129,10 +162,8 @@
   </div>
 </footer>
 
-<!-- شريط السلة السفلي -->
 <div class="bar" id="bar"><button type="button" id="barOpen"><span id="barTxt"></span></button><button class="btn" type="button" id="barSend"></button></div>
 
-<!-- ورقة السلة -->
 <div class="scrim" id="scrim"></div>
 <aside class="sheet" id="sheet" aria-hidden="true" role="dialog" aria-label="Sepetim">
   <header class="sheet-h"><h3 id="shTitle"></h3><button class="x" id="shClose" type="button" aria-label="Kapat">×</button></header>
